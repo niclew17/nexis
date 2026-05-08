@@ -1,0 +1,542 @@
+# Nexis — Founder's Navigator PRD
+
+---
+
+## 1. Executive Summary
+
+Nexis is a voice-first web application that helps Utah founders find the right state resources in under two minutes. A founder speaks naturally to answer four targeted questions about themselves and their business; the app uses structured filtering, vector similarity search, and LLM synthesis to surface the three to five state programs most relevant to that specific person — with a personalized explanation of why each one matches.
+
+The core problem is not that Utah's resources are insufficient. There are 214 programs on startup.utah.gov. The problem is that the interface is built for administrators, not founders. A landscaping business owner in St. George needs different things than a pre-revenue software founder in Lehi, but the current experience gives them the same undifferentiated wall of links. Nexis replaces that wall with a conversation.
+
+**MVP Goal:** A working end-to-end demo in which any founder can complete the voice intake in under two minutes and receive a clean, personalized set of resource recommendations backed by real Utah state data.
+
+---
+
+## 2. Mission
+
+**Make it impossible to walk away without knowing your next step.**
+
+### Core Principles
+
+1. **Speed over completeness.** Three highly relevant results beat twenty mediocre ones.
+2. **Personalization is the product.** The same question asked of two different founders should return different answers.
+3. **Voice-first, text-confirmed.** Speaking is faster than typing. Reading confirms accuracy.
+4. **No developer required to update.** Content must be maintainable by a non-technical program manager.
+5. **The interface disappears.** The only thing the founder should remember is their own words appearing on screen and knowing what to do next.
+
+---
+
+## 3. Target Users
+
+### Primary Persona: The Utah Founder
+
+- Business owner or aspiring entrepreneur in Utah at any stage (pre-idea to scaling)
+- Does not have time to read through government websites
+- May not know what category of help they need — they know their problem
+- Ranges from a landscaper in St. George to a software founder in Lehi to a veteran starting a food truck in Ogden
+- Technical comfort: consumer-level (uses a smartphone, not necessarily tech-savvy)
+
+### Secondary Persona: The Program Administrator
+
+- State agency or nonprofit employee who manages resource listings
+- Non-technical: comfortable with spreadsheets and Supabase Studio, not with code
+- Needs a path to add, edit, or remove resources as programs launch and expire
+- Does not want to file a ticket or wait for a developer
+
+### Pain Points
+
+- Founders: overwhelming choice, irrelevant results, no explanation of why something applies to them
+- Administrators: static websites require developer involvement for every content update
+
+---
+
+## 4. MVP Scope
+
+### Core Functionality
+
+- ✅ Voice intake — four questions answered via microphone
+- ✅ Live transcript display (Deepgram WebSocket)
+- ✅ Claude extracts structured answers from raw transcripts
+- ✅ Silence detection (~2.5s) auto-advances questions
+- ✅ "Next question" verbal trigger advances immediately
+- ✅ Three-layer matching pipeline (structured filter → vector search → LLM synthesis)
+- ✅ Results screen with 3–5 personalized resource cards
+- ✅ Each card includes a one-sentence personalized match explanation
+- ✅ 214 Utah state resources imported into Supabase with pgvector embeddings
+- ✅ Non-developer content update path via Supabase Studio
+- ✅ Anonymous sessions (no login required)
+
+### Out of Scope (MVP)
+
+- ❌ Text-to-speech readback of results
+- ❌ User authentication and saved sessions
+- ❌ Editing a previous answer mid-interview
+- ❌ Multi-language support
+- ❌ Progress bar or step counter
+- ❌ Mobile native app
+- ❌ Real-time collaboration or shared sessions
+- ❌ Admin UI for content updates (Supabase Studio used directly)
+- ❌ Analytics dashboard
+- ❌ Email or follow-up notifications
+
+---
+
+## 5. User Stories
+
+**US-1: Complete voice intake**
+As a founder, I want to answer four short questions by speaking, so that I don't have to fill out a form or navigate a website.
+> Example: A veteran in Ogden speaks for about 90 seconds total across four questions and never touches the keyboard.
+
+**US-2: Receive personalized results**
+As a founder, I want to see the resources most relevant to my specific situation — not a generic list — so that I know exactly what to explore next.
+> Example: A woman founder in Washington County looking for funding sees the SBDC program with the note: "This matches you because you're a woman-owned business in southern Utah and the SBDC has a dedicated Women's Business Center in your area."
+
+**US-3: Understand why a resource was recommended**
+As a founder, I want a plain-English explanation of why each recommendation applies to me, so that I don't have to read the full program description to know if it's worth clicking.
+> Example: Each card shows one sentence generated by Claude, unique per user profile.
+
+**US-4: Complete the experience quickly**
+As a founder, I want the whole experience to take under two minutes, so that I actually use it instead of closing the tab.
+> Example: Four questions at ~20 seconds each, plus ~10 seconds of processing, plus 30 seconds reading results = under two minutes total.
+
+**US-5: Access without creating an account**
+As a founder, I want to use this without registering, so that there's no friction between landing on the page and getting my answer.
+> Example: No login screen, no email required. Session is anonymous and temporary.
+
+**US-6: Update resources without developer help**
+As a program administrator, I want to add or update a resource without filing a ticket, so that the tool stays current as new programs launch.
+> Example: Admin opens Supabase Studio, adds a row to the resources table, and a background process auto-generates the embedding. No code changes needed.
+
+**US-7: Handle imprecise or conversational answers**
+As a founder who speaks casually, I want the system to understand me even if I don't know the exact program categories, so that I don't have to learn government taxonomy to get relevant results.
+> Example: "I'm just trying to figure out how to get some money to buy equipment" → Claude extracts `Funding`, stage `Early`, and the semantic embedding captures the equipment/capital context.
+
+---
+
+## 6. Core Architecture & Patterns
+
+### High-Level Architecture
+
+```
+Browser
+  ├── Voice Intake UI (Next.js App Router)
+  │     ├── Deepgram WebSocket (client-side audio stream)
+  │     ├── /api/process-answer (Claude extraction per question)
+  │     └── /api/match-resources (three-layer pipeline on completion)
+  │
+Supabase (Postgres + pgvector)
+  ├── resources table (214 rows + embeddings)
+  ├── intake_sessions table
+  └── intake_answers table
+  │
+Anthropic API (server-side only)
+  ├── Answer extraction (per question, small prompt)
+  └── Result synthesis (one call, top 15 candidates → top 5 with explanations)
+```
+
+### Directory Structure
+
+```
+/app
+  /page.tsx                  — intake UI entry point
+  /results/page.tsx          — results display
+  /api/process-answer/       — Claude extraction route
+  /api/match-resources/      — matching pipeline route
+  /api/deepgram-token/       — short-lived Deepgram token generation
+/components
+  /intake/
+    QuestionDisplay.tsx
+    TranscriptDisplay.tsx
+    MicIndicator.tsx
+    ConfirmedAnswer.tsx
+  /results/
+    ResultsNarrative.tsx
+    ResourceCard.tsx
+/lib
+  /matching/
+    structuredFilter.ts      — county + community + topic filtering
+    vectorSearch.ts          — pgvector cosine similarity query
+    synthesize.ts            — Claude synthesis prompt + call
+  /supabase/
+    client.ts
+    schema.ts
+```
+
+### Key Design Patterns
+
+- **Server-side LLM calls only.** Claude is never called from the browser. All Anthropic SDK usage goes through Next.js API routes.
+- **Upsert-per-answer.** Answers are written to Supabase one at a time as each question is confirmed, not batched at the end. Sessions are resumable.
+- **Three-layer funnel.** Structured filter narrows candidates first (fast, cheap), vector search ranks within candidates, LLM only sees the final ~15 candidates (keeps token cost low).
+- **Separation of extraction and synthesis.** Two distinct Claude calls with different prompts: one extracts a single structured answer, one synthesizes final results. Never combined.
+
+---
+
+## 7. Feature Specifications
+
+### Voice Intake
+
+**States:** `idle` → `instructions` → `listening` → `processing` → `confirmed` → (next question) → `complete`
+
+**Question flow (4 questions):**
+
+| # | Question | Extracted fields |
+|---|---|---|
+| 1 | "Do you identify with any of these founder communities — veteran, woman, rural founder, immigrant, or LGBTQ+? You can name one, a few, or skip it if none apply." | `communities: string[]` |
+| 2 | "Where in Utah are you based or operating? You can name a city, a county, or describe the region — like Salt Lake, St. George, Cache Valley, or rural southern Utah." | `counties: string[]` |
+| 3 | "Tell me about your business — what you do and where you are in the journey. Are you still in the idea phase, just getting started, or already running something?" | `industry: string`, `stage: string`, `description: string` |
+| 4 | "What's the most pressing thing you need help with right now? For example — finding funding or loans, figuring out how to get started, growing or scaling, marketing and sales, or just connecting with other entrepreneurs and mentors." | `primary_need: string`, `topics: string[]` |
+
+**Claude extraction prompt structure (per question):**
+```
+You are extracting structured data from a voice transcript.
+Question asked: {question_text}
+Extraction hint: {extraction_hint}
+Raw transcript: {transcript}
+
+Return JSON: { "extractedAnswer": string, "structured": object, "isAnswered": boolean }
+```
+
+### Three-Layer Matching Pipeline
+
+**Layer 1 — Structured Filter**
+- Parse user's counties against `locations` array on resources
+- Parse user's communities against `communities` array on resources
+- If no community match → include all resources (community is sparse)
+- Output: candidate pool (~30–80 resources)
+
+**Layer 2 — Vector Search**
+- Build user profile string from all four answers combined
+- Generate embedding via OpenAI `text-embedding-3-small` (or equivalent)
+- pgvector cosine similarity against `embedding` column on resources
+- Filter to top 15 from the candidate pool
+
+**Layer 3 — LLM Synthesis**
+- Pass top 15 resource titles + descriptions + the full user profile to Claude
+- Claude returns: top 5 picks ranked by relevance, each with a one-sentence personalized match explanation
+- Prompt instructs Claude to be specific: reference the user's county, community, stage, and stated need
+
+### Results Display
+
+- Narrative header: one sentence generated by Claude ("Based on what you shared, here are your top matches.")
+- 3–5 `ResourceCard` components showing:
+  - Resource title (large)
+  - One-sentence personalized match reason (green, Instrument Serif)
+  - Topic tags (small pills)
+  - Link button
+- Collapsible "See more matches" section below the top 5
+
+### Content Update Path (Non-Developer)
+
+1. Admin opens Supabase Studio → `resources` table
+2. Inserts a new row with title, description, communities, locations, topics, link
+3. A Supabase Edge Function (or a lightweight cron) detects new rows with null embeddings and generates them via the embedding API
+4. No code deployment required
+
+---
+
+## 8. Technology Stack
+
+| Concern | Tool | Notes |
+|---|---|---|
+| Framework | Next.js 14+ (App Router) | Already initialized |
+| Database | Supabase (Postgres + pgvector) | Auth optional for MVP |
+| Speech-to-text | Deepgram WebSocket API | `smart_format: true`, `filler_words: false` |
+| LLM | Claude via Anthropic SDK (server-side) | `claude-sonnet-4-6` for extraction; `claude-sonnet-4-6` for synthesis |
+| Embeddings | Voyage AI or OpenAI `text-embedding-3-small` | Used for resource embeddings + user profile embedding |
+| Vector search | pgvector (Supabase built-in) | `<=>` cosine distance operator |
+| Styling | Tailwind CSS | Already configured |
+| UI components | shadcn/ui | Already configured |
+| Fonts | Instrument Serif (Google Fonts) | For transcript + confirmed answer display |
+
+### Key Dependencies
+
+```json
+{
+  "@anthropic-ai/sdk": "latest",
+  "@deepgram/sdk": "latest",
+  "@supabase/supabase-js": "latest",
+  "openai": "latest"
+}
+```
+
+---
+
+## 9. Security & Configuration
+
+### Environment Variables
+
+```bash
+# Anthropic
+ANTHROPIC_API_KEY=
+
+# Deepgram
+DEEPGRAM_API_KEY=
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=      # server-side only, never exposed to browser
+
+# Embeddings
+OPENAI_API_KEY=                 # or VOYAGE_API_KEY if using Voyage AI
+```
+
+### Security Principles
+
+- ✅ All LLM and Deepgram API calls are server-side only
+- ✅ Deepgram tokens are short-lived and generated per-session via `/api/deepgram-token`
+- ✅ `SUPABASE_SERVICE_ROLE_KEY` never exposed to the client
+- ✅ No user authentication required for MVP — sessions are anonymous
+- ✅ User voice data (raw transcripts) stored in Supabase but not linked to identity
+- ❌ Row-level security on intake tables (deferred — no auth in MVP)
+- ❌ Rate limiting on API routes (deferred to post-MVP)
+- ❌ Audit logging (deferred)
+
+---
+
+## 10. API Specification
+
+### `POST /api/deepgram-token`
+
+Generates a short-lived Deepgram API token for client-side WebSocket use.
+
+**Response:**
+```json
+{ "token": "string" }
+```
+
+---
+
+### `POST /api/process-answer`
+
+Extracts structured data from a raw voice transcript for a single question.
+
+**Request:**
+```json
+{
+  "sessionId": "uuid",
+  "questionIndex": 0,
+  "questionText": "string",
+  "extractionHint": "string",
+  "rawTranscript": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "extractedAnswer": "Nicholas Lewis",
+  "structured": { "communities": ["veteran"] },
+  "isAnswered": true
+}
+```
+
+---
+
+### `POST /api/match-resources`
+
+Runs the three-layer matching pipeline and returns personalized recommendations.
+
+**Request:**
+```json
+{
+  "sessionId": "uuid",
+  "profile": {
+    "communities": ["veteran"],
+    "counties": ["Salt Lake"],
+    "industry": "Software and Information Technology",
+    "stage": "early",
+    "description": "Building a SaaS product for restaurants",
+    "primaryNeed": "funding",
+    "topics": ["Funding"]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "narrative": "Based on what you shared, here are your top matches.",
+  "results": [
+    {
+      "id": "uuid",
+      "title": "Utah Veteran Entrepreneur Program",
+      "description": "...",
+      "matchReason": "This matches you because you're a veteran founder in Salt Lake County actively seeking funding for an early-stage software business.",
+      "topics": ["Funding", "Entrepreneurship Communities"],
+      "link": "https://..."
+    }
+  ]
+}
+```
+
+---
+
+## 11. Success Criteria
+
+### MVP Definition of Done
+
+- ✅ Full end-to-end flow works: voice intake → matching → results
+- ✅ All 214 resources imported with embeddings
+- ✅ Results return in under 10 seconds after final answer
+- ✅ At least 3 resources returned for any valid founder profile
+- ✅ Each result has a unique, personalized match explanation (not generic)
+- ✅ A non-developer can add a new resource via Supabase Studio
+- ✅ The app works on Chrome on desktop without installation
+
+### Quality Indicators
+
+- Voice intake completes in under 2 minutes for a typical user
+- Matching results feel relevant — a rural founder in southern Utah does not see Salt Lake-only resources
+- Community-specific resources (veteran, woman-owned) surface when the user identifies with that community
+- The UI never shows a loading spinner for longer than 3 seconds without visual feedback
+
+### UX Goals
+
+- Zero visible UI chrome during the interview (no nav, no progress bar, no icons)
+- Transcript appears in real-time as the user speaks
+- Confirmed answer animates cleanly before advancing
+- Results screen matches the aesthetic of the intake: same background, same typography
+
+---
+
+## 12. Implementation Phases
+
+### Phase 1 — Data Foundation (Hours 1–3)
+
+**Goal:** All 214 resources in Supabase, embedded, and queryable.
+
+- ✅ Create Supabase project and enable pgvector
+- ✅ Design and migrate `resources` table schema (parse pipe-separated fields into arrays)
+- ✅ Write import script to load all 214 rows from the spreadsheet
+- ✅ Generate and store `text-embedding-3-small` embeddings for each resource description
+- ✅ Validate: pgvector cosine similarity query returns sensible results for a test input
+
+**Validation:** Run a manual test query — "I'm a veteran in Salt Lake looking for funding" — and confirm the top 5 results are coherent.
+
+---
+
+### Phase 2 — Voice Intake (Hours 3–10)
+
+**Goal:** Working four-question voice interview that saves structured answers to Supabase.
+
+- ✅ Deepgram WebSocket integration with short-lived token auth
+- ✅ Live transcript display in Instrument Serif italic
+- ✅ Silence detection (2.5s) auto-advance
+- ✅ "Next question" verbal trigger
+- ✅ `/api/process-answer` Claude extraction route
+- ✅ Confirmed answer animation (italic muted → regular green)
+- ✅ Session + answers upserted to Supabase per question
+- ✅ Onboarding slide (3 instruction lines, tap to skip)
+- ✅ All four questions with correct extraction hints
+
+**Validation:** Complete the full intake manually, check Supabase for correct structured data in `intake_answers`.
+
+---
+
+### Phase 3 — Matching Pipeline & Results (Hours 10–20)
+
+**Goal:** Intake completion triggers personalized resource recommendations.
+
+- ✅ `/api/match-resources` route
+- ✅ Layer 1: structured filter on counties + communities
+- ✅ Layer 2: pgvector similarity search against candidate pool
+- ✅ Layer 3: Claude synthesis prompt → top 5 with match reasons
+- ✅ Results page with `ResourceCard` components
+- ✅ Personalized narrative header
+- ✅ "See more matches" collapsible section
+- ✅ Auto-navigate from `complete` intake state to results page
+
+**Validation:** Test three distinct founder profiles (rural St. George founder, veteran SLC founder, pre-revenue student) and verify results differ meaningfully between them.
+
+---
+
+### Phase 4 — Polish & Update Mechanism (Hours 20–24)
+
+**Goal:** Production-ready demo with a clear content update path.
+
+- ✅ Full transition animations (question advance, answer confirmation)
+- ✅ Mobile-responsive layout (680px max-width, fluid below)
+- ✅ Error states (mic permission denied, API failure fallback)
+- ✅ Supabase Edge Function for auto-embedding new resource rows
+- ✅ Brief internal doc: how to add/update a resource
+- ✅ End-to-end timing test: full flow under 2 minutes
+
+**Validation:** Hand the app to someone unfamiliar with it and watch them complete the full flow without assistance.
+
+---
+
+## 13. Future Considerations
+
+- **Text-to-speech results:** Claude narrates the top recommendations back to the user via browser TTS, completing the voice-first loop
+- **Session persistence + account:** Founders can save their profile and return to see updated recommendations as new programs launch
+- **Dynamic follow-up questions:** After the initial four, Claude can ask one clarifying question if the user's profile is ambiguous (e.g., "You mentioned both funding and getting started — which is more urgent right now?")
+- **Admin dashboard:** A proper UI for program administrators to manage resources, replace Supabase Studio as the update interface
+- **Resource freshness signals:** Flag resources that haven't been updated in 6+ months, surface a warning to the admin
+- **Multi-county reach:** Some founders operate statewide — support "all of Utah" as a location input
+- **Comparison view:** Side-by-side display of two resources the founder is considering
+- **Referral tracking:** Let founders indicate which resource they contacted and whether it helped, feeding back into ranking
+
+---
+
+## 14. Risks & Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Deepgram WebSocket latency or failure during demo | Medium | High | Implement a text fallback input mode for demos in poor-network environments |
+| Claude synthesis response too slow (>5s) | Medium | Medium | Stream the response; show cards as they arrive rather than waiting for all five |
+| Matching returns irrelevant results for edge-case profiles | Medium | High | Test all four persona archetypes before demo; tune the synthesis prompt with explicit constraints ("only recommend resources whose location includes the user's county") |
+| Spreadsheet data quality issues (empty fields, malformed pipe-separators) | Low | Medium | Run a data validation script during import; log any rows with missing required fields |
+| Non-developer update path breaks after embedding model changes | Low | High | Pin the embedding model version in code; document the version in Supabase resource metadata |
+
+---
+
+## 15. Appendix
+
+### Data Schema (Supabase)
+
+**`resources` table**
+| column | type | notes |
+|---|---|---|
+| id | uuid | PK |
+| external_id | integer | from spreadsheet `id` column |
+| title | text | |
+| description | text | |
+| communities | text[] | parsed from pipe-separated string |
+| industries | text[] | parsed from pipe-separated string |
+| locations | text[] | county names, parsed from pipe-separated string |
+| topics | text[] | parsed from pipe-separated string |
+| link | text | |
+| email | text | nullable |
+| embedding | vector(1536) | pgvector, from description |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+
+**`intake_sessions` table**
+| column | type | notes |
+|---|---|---|
+| id | uuid | PK |
+| status | text | `in_progress`, `completed`, `abandoned` |
+| started_at | timestamptz | |
+| completed_at | timestamptz | nullable |
+
+**`intake_answers` table**
+| column | type | notes |
+|---|---|---|
+| id | uuid | PK |
+| session_id | uuid | FK → intake_sessions |
+| question_index | integer | 0–3 |
+| question_text | text | stored verbatim |
+| raw_transcript | text | |
+| extracted_answer | text | cleaned display text |
+| structured_data | jsonb | extracted fields (communities, counties, etc.) |
+| is_answered | boolean | Claude confidence flag |
+| answered_at | timestamptz | |
+
+### Related Documents
+
+- Voice Intake UI Design: conversation context (PRD source)
+- Utah State Resource Spreadsheet: provided by hackathon organizers (214 rows)
+- Deepgram Docs: https://developers.deepgram.com
+- Anthropic SDK: https://docs.anthropic.com
+- Supabase pgvector: https://supabase.com/docs/guides/database/extensions/pgvector
