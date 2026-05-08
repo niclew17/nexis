@@ -22,6 +22,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Intake — Mic permission requested after InstructionSlide (Feature: mic-permission-and-text-fallback)
+**Impact:** Low  
+**Context:** Permission dialog appears on the second button click ("Begin" on InstructionSlide), not the first ("Find your resources →"). Users may be surprised mid-flow.  
+**Ideal solution:** Call `requestPermission()` on the first user gesture so the dialog appears immediately and the InstructionSlide can be read while permission resolves.  
+**Workaround in place:** None — addressed directly in this feature.
+
+---
+
 ## Template
 
 ```

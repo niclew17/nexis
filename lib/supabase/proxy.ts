@@ -49,7 +49,13 @@ export async function updateSession(request: NextRequest) {
 
   const isAnonymous = user?.is_anonymous === true;
 
-  if (!user && !request.nextUrl.pathname.startsWith("/auth")) {
+  const path = request.nextUrl.pathname;
+  const isPublic =
+    path === "/" ||
+    path.startsWith("/results") ||
+    path.startsWith("/api/");
+
+  if (!user && !path.startsWith("/auth") && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

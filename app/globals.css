@@ -60,3 +60,8 @@
 .text-nexis-accent { color: #2a5e49; }
 .text-nexis-muted { color: #666666; }
 .dark .text-nexis-muted { color: #666666; }
+
+@keyframes mic-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}

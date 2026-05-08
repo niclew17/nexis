@@ -9,7 +9,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Nexis — Find Your Utah Business Resources",
+  title: "Utah's Nexis — Find Your Utah Business Resources",
   description:
     "Answer four questions by voice. Get personalized Utah state resources in under two minutes.",
 };
