@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMapStore } from "@/lib/map/store";
 import { COLORS } from "@/lib/map/mapConfig";
 import { VoiceFilterButton } from "./VoiceFilterButton";
@@ -23,7 +22,13 @@ export function MapSidebar() {
         overflowY: "auto",
       }}
     >
-      <Link
+      {/* Plain <a> (not next/link) forces a full browser navigation when
+          leaving the map, which wipes all client state — mapbox-gl's pooled
+          map instance, the leaked orbit rAF, and Zustand store contents. A
+          client-side nav back to / would preserve that state and re-entry
+          to /map would render the recycled map without markers. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+      <a
         href="/"
         style={{
           position: "absolute",
@@ -40,7 +45,7 @@ export function MapSidebar() {
           alt="Nexis"
           style={{ height: "72px", width: "auto", opacity: 0.9, userSelect: "none" }}
         />
-      </Link>
+      </a>
 
       <div
         style={{
