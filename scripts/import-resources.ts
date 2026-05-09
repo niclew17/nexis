@@ -3,14 +3,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { parse } from 'csv-parse/sync'
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 function parsePipeList(value: string): string[] {
   if (!value || value.trim() === '') return []
@@ -33,25 +30,7 @@ async function main() {
 
   console.log(`Loaded ${records.length} rows from CSV`)
 
-  // Build embedding inputs: title + description gives the best semantic signal
-  const embeddingInputs = records.map(r =>
-    [r.Title, r.description].filter(Boolean).join('\n\n').slice(0, 8000)
-  )
-
-  console.log('Generating embeddings (batched)...')
-  const embeddingResponse = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: embeddingInputs,
-  })
-
-  // OpenAI returns embeddings in the same order as inputs
-  const embeddings = embeddingResponse.data
-    .sort((a, b) => a.index - b.index)
-    .map(e => e.embedding)
-
-  console.log(`Got ${embeddings.length} embeddings — upserting to Supabase...`)
-
-  const rows = records.map((r, i) => ({
+  const rows = records.map((r) => ({
     external_id: parseInt(r.id),
     title: r.Title,
     description: r.description,
@@ -61,7 +40,6 @@ async function main() {
     topics: parsePipeList(r.Topics),
     link: r.link || null,
     email: r.email || null,
-    embedding: embeddings[i],
   }))
 
   // Upsert in batches of 50 (Supabase recommends staying under 1MB per request)
@@ -79,7 +57,7 @@ async function main() {
     console.log(`Upserted rows ${i + 1}–${Math.min(i + BATCH, rows.length)}`)
   }
 
-  console.log('Done. All resources imported with embeddings.')
+  console.log('Done. All resources imported.')
 }
 
 main().catch(err => {

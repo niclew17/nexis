@@ -34,7 +34,8 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 **Impact:** Low  
 **Context:** The `resources_embedding_idx` was created with `lists = 50` (IVFFlat). Recommended lists for pgvector is `sqrt(row_count)` ≈ 15 for 213 rows. With 50 lists and 213 rows, many list buckets contain ~4 rows — the index provides minimal benefit over a sequential scan and may actually be slower on cold cache.  
 **Ideal solution:** `DROP INDEX resources_embedding_idx; CREATE INDEX ... USING ivfflat ... WITH (lists = 15);`  
-**Workaround in place:** At 213 rows the performance difference is negligible for a demo — deferred to post-MVP.
+**Workaround in place:** At 213 rows the performance difference is negligible for a demo — deferred to post-MVP.  
+**Status (Feature: secret-link-resource-admin):** Resolved — the embedding column, IVFFlat index, and both pgvector RPCs were dropped. The matching pipeline never queried them at runtime; the column was inherited from the original three-layer design and orphaned when the SQL-deterministic filter replaced vector search.
 
 ---
 
@@ -179,6 +180,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 **Context:** `lib/startups/freeMailDomains.ts` is a hand-curated list of ~20 canonical free-mail providers. Newer privacy-mail or regional providers will not be caught until the list is updated. Additionally, `/api/startups/create` has no rate limiting, so a determined actor with one valid corporate domain could spam the table with off-brand variations of their own listing (within the slug-uniqueness retry cap).  
 **Ideal solution:** Use a maintained blocklist library (e.g., the `disposable-email-domains` repo) refreshed via a build step; add per-IP rate limiting (5 creates/hour) and per-domain rate limiting (1 create/domain/day) at the route level via Vercel KV or Supabase Edge.  
 **Workaround in place:** Hand-maintained list covers the top 20 providers (~95% of expected misuse). The email-domain ↔ website-domain match plus Mapbox geocoding requirement raise the cost of casual abuse. Rate limiting deferred to post-MVP.
+
+---
+
+### Admin — No rate limit or audit log on resource inserts (Feature: secret-link-resource-admin)
+**Impact:** Low  
+**Context:** `/api/admin/resources/create` accepts unlimited POSTs from any caller with a valid token. A leaked token plus a script could spam the resources table with junk rows that then surface in the matching pipeline. There is no per-IP rate limit and no audit log of who inserted what.  
+**Ideal solution:** Wrap the route in a Vercel KV / Upstash rate limit (e.g., 30 inserts/hour/IP); add a `created_by` text column populated from a small "admin name" field on the form (audit trail) plus an `inserted_via` column to distinguish admin-form rows from CSV-imported rows.  
+**Workaround in place:** Token rotation. If the token leaks, regenerate it in `.env` + Vercel.
 
 ---
 

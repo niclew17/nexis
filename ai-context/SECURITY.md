@@ -13,7 +13,7 @@ Never commit `.env.local` to version control. Required secrets:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase client | Yes — public |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client | Yes — public (anon only) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side DB writes | No — server only |
-| `OPENAI_API_KEY` | Embedding generation | No — server only |
+| `RESOURCE_ADMIN_TOKEN` | Token-gated `/admin/resources/[token]` page + API | No — server only |
 
 ---
 
@@ -119,6 +119,16 @@ Never commit `.env.local` to version control. Required secrets:
 - All writes flow through the service-role client. The `startups` table keeps the existing "public read" RLS; no client-side write privilege is granted.
 - The `claimed_by` FK to `auth.users(id)` ensures the inserted row's owner is a real, confirmed user.
 - **Post-MVP**: rate-limit `/api/startups/create` per IP and per email domain; consider Turnstile/hCaptcha to prevent automated farming of fake listings.
+
+### Admin Resource Page (Feature: secret-link-resource-admin)
+- `/admin/resources/[token]` is gated by a single shared secret in `RESOURCE_ADMIN_TOKEN`. Compare uses `crypto.timingSafeEqual` (`lib/admin/token.ts`) to avoid timing leaks. Length mismatch returns `false` immediately — length is not the secret here.
+- Wrong token at the page returns Next.js's standard 404 (`notFound()`); wrong token at the API returns `{"error":"Not found"}` with status 404. Both responses are indistinguishable from a non-existent route, so the URL surface does not leak the existence of the admin endpoint.
+- The token travels in the URL path (page) and request body (POST). URL paths appear in HTTP referrer headers and server access logs — treat the token as **rotatable, not permanent**. Do not embed it in any link the user might click out of (the page itself does not issue cross-origin requests).
+- All four array fields (`communities`, `industries`, `locations`, `topics`) are server-side whitelisted against `KNOWN_*` constants from `lib/intake/filterConstants.ts`. A tampered client cannot insert arbitrary strings — the route's `validateEnumArray` rejects unknown values with 400.
+- `link` is parsed with `new URL()` and constrained to `http(s):` protocols — `javascript:` and `data:` URIs are rejected with 400. `email` is loosely validated against an RFC-5322-lite regex. React's default escaping prevents XSS in downstream rendering, but the protocol check is the load-bearing defense for `link` since it surfaces in an `<a>` tag.
+- `external_id` is computed server-side via `MAX(external_id) + 1`. Concurrent inserts can race; the unique constraint catches the second writer (Postgres error 23505 → 500 with manual retry). Acceptable at hackathon scale.
+- Service-role key is used for the insert (bypasses RLS). The route has no auth check beyond the token; do not refactor it to use the cookie-based `createClient` — the admin is intentionally session-less.
+- **Post-MVP**: per-IP rate limit, audit log, magic-link / email-OTP token issuance, automatic token rotation.
 
 ---
 

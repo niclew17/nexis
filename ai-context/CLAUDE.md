@@ -28,8 +28,6 @@ npx tsx --env-file=.env.local scripts/<file>.ts   # run a script with env loaded
 | Auth | Supabase Auth via `@supabase/ssr` |
 | Speech-to-text | Deepgram WebSocket API |
 | LLM | Anthropic SDK (`claude-sonnet-4-6`) — server-side only |
-| Embeddings | OpenAI `text-embedding-3-small` |
-| Vector search | pgvector (`<=>` cosine distance) |
 
 ---
 
@@ -42,7 +40,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=   # ← anon/public key (this project uses
 SUPABASE_SERVICE_ROLE_KEY=              # server-side only — never import in client files
 DEEPGRAM_API_KEY=                       # server-side only
 ANTHROPIC_API_KEY=                      # server-side only
-OPENAI_API_KEY=                         # server-side only (embeddings)
+RESOURCE_ADMIN_TOKEN=                   # server-side only — anyone with this token + URL can insert resources
 ```
 
 **Critical:** This project uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — not the typical `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Don't rename it or the existing Supabase client files break.
@@ -85,7 +83,7 @@ lib/
   utils.ts                    ← cn() helper
 
 scripts/
-  import-resources.ts         ← one-time CSV import + embedding generation
+  import-resources.ts         ← one-time CSV import for the resources table
   001_create_resources.sql    ← run in Supabase SQL editor to create resources table
 
 ai-context/
@@ -148,7 +146,6 @@ locations     text[]               -- Utah county names
 topics        text[]               -- ['Funding', 'Start a Business', ...]
 link          text
 email         text
-embedding     vector(1536)         -- text-embedding-3-small on title+description
 created_at    timestamptz
 updated_at    timestamptz
 ```
@@ -176,22 +173,17 @@ answered_at     timestamptz
 
 ---
 
-## Three-Layer Matching Pipeline
+## Two-Layer Matching Pipeline
 
-Executed in `/api/match-resources` after all four answers are collected.
+Executed in `/api/match-resources` after all four answers are collected. An embedding pre-filter layer was removed in the secret-link-resource-admin feature — at 213 resources, full-description Claude ranking outperforms vector pre-filter on match quality and latency.
 
 **Layer 1 — Structured filter** (`lib/matching/structuredFilter.ts`)
 - County overlap: `locations && '{Salt Lake}'::text[]`
 - Community overlap: `communities && '{Veteran}'::text[]` (skip if user provided none)
 - Output: ~30–80 candidates
 
-**Layer 2 — Vector search** (`lib/matching/vectorSearch.ts`)
-- Embed the full user profile string with `text-embedding-3-small`
-- pgvector cosine similarity against `resources.embedding`
-- Restrict to candidate pool from Layer 1; return top 15
-
-**Layer 3 — LLM synthesis** (`lib/matching/synthesize.ts`)
-- Pass top 15 resource titles + descriptions + user profile to Claude
+**Layer 2 — LLM synthesis** (`lib/matching/synthesize.ts`)
+- Pass candidate resource titles + descriptions + user profile to Claude
 - Prompt returns: top 5 ranked, each with a one-sentence personalized match reason
 - Model: `claude-sonnet-4-6`
 
@@ -265,7 +257,7 @@ The intake UI deliberately avoids standard app chrome. No nav, no header, no foo
 
 ## Security Rules
 
-- **Never** call the Anthropic SDK, OpenAI SDK, or Deepgram from a client component. All AI calls go through API routes.
+- **Never** call the Anthropic SDK or Deepgram from a client component. All AI calls go through API routes.
 - **Never** import `SUPABASE_SERVICE_ROLE_KEY` in any file under `app/` that isn't a `route.ts`.
 - **Never** import `DEEPGRAM_API_KEY` or `ANTHROPIC_API_KEY` in client-side code.
 - Deepgram tokens are short-lived and fetched server-side per session.
@@ -283,3 +275,16 @@ Full security notes: `ai-context/SECURITY.md`
 - The "skip" affordance during interview is a single small text link only — no buttons
 - Results cards must include a unique, user-specific match reason (not generic copy)
 - The content update path for non-developers is Supabase Studio — no admin UI in MVP
+
+---
+
+## Admin Tools
+
+### `/admin/resources/[token]` (Feature: secret-link-resource-admin)
+Token-gated form for adding new rows to the `resources` table without code changes or Supabase Studio access.
+
+- Token comes from `RESOURCE_ADMIN_TOKEN` env var, compared via `crypto.timingSafeEqual` in `lib/admin/token.ts`
+- Wrong token → 404 (no info leak)
+- Form constrains the four array columns to the enums in `lib/intake/filterConstants.ts` so new resources are immediately matchable by Q1–Q4
+- `external_id` auto-increments server-side (max + 1)
+- There is no UI link to this page from anywhere in the public app
