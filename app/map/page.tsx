@@ -1,71 +1,49 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import type { Startup } from "@/lib/map/types";
+import { MapClient } from "@/components/map/MapClient";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Map() {
+// Public-read RLS means the anon role works — no service role needed here.
+async function loadStartups(): Promise<Startup[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("startups")
+    .select(
+      "slug, linkedin_url, name, address, lat, lng, description, website, domain, logo_url, stage, employees, section, year_founded, hiring"
+    )
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("[/map] failed to load startups:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as Startup[];
+}
+
+// Suspense boundary lets Next 16 prerender the shell immediately and stream
+// the markers in once the DB query resolves. Without it, the whole route
+// blocks on the await — Cache Components flags that as a blocking-route error.
+async function MapContent() {
+  const startups = await loadStartups();
+  return <MapClient startups={startups} />;
+}
+
+function MapFallback() {
   return (
-    <main
+    <div
       style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
+        height: "100dvh",
         backgroundColor: "black",
-        color: "white",
-        padding: "32px",
       }}
-    >
-      <Link href="/" style={{ display: "block", lineHeight: 0, marginBottom: "48px" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt="Nexis"
-          style={{ height: "72px", width: "auto", opacity: 0.9, userSelect: "none" }}
-        />
-      </Link>
+    />
+  );
+}
 
-      <h1
-        style={{
-          fontFamily: "var(--font-instrument-serif)",
-          fontSize: "clamp(3rem, 8vw, 5rem)",
-          color: "white",
-          letterSpacing: "-0.02em",
-          margin: 0,
-          lineHeight: 1,
-        }}
-      >
-        Map
-      </h1>
-
-      <p
-        style={{
-          fontFamily: "ui-sans-serif, system-ui, -apple-system",
-          fontSize: "0.9375rem",
-          color: "#666666",
-          marginTop: "16px",
-          marginBottom: "48px",
-          maxWidth: "440px",
-          textAlign: "center",
-          lineHeight: 1.6,
-        }}
-      >
-        Explore Utah&apos;s founder resources by location — coming soon.
-      </p>
-
-      <Link
-        href="/"
-        style={{
-          fontFamily: "ui-sans-serif, system-ui, -apple-system",
-          fontSize: "0.8125rem",
-          color: "#2a5e49",
-          textDecoration: "none",
-          letterSpacing: "0.05em",
-          padding: "12px 24px",
-          border: "1px solid #1a1a1a",
-          transition: "border-color 0.2s ease-out",
-        }}
-      >
-        ← Back to home
-      </Link>
-    </main>
+export default function MapPage() {
+  return (
+    <Suspense fallback={<MapFallback />}>
+      <MapContent />
+    </Suspense>
   );
 }

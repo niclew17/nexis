@@ -78,6 +78,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Map — HTML markers for 255 startups (Feature: utah-startup-map)
+**Impact:** Low  
+**Context:** Using custom HTML markers (react-map-gl Marker) for all 255 startups. At low zoom, all markers are visible simultaneously — 255 DOM nodes + logo image loads. No clustering implemented.  
+**Ideal solution:** At zoom <9, use Mapbox's native symbol/circle layer (GeoJSON source with `cluster:true`) for performance; switch to custom HTML markers when zoomed in past a threshold.  
+**Workaround in place:** 255 HTML markers is performant enough for demo purposes. Logo images load lazily (natural browser behavior).
+
+---
+
 ### Routing — Home page doubles as feature entry point (Feature: landing-page-and-routing-split)
 **Impact:** Low  
 **Context:** Pre-split, `/` directly renders the voice intake experience, making it impossible to add a second top-level feature (Map) without a home page split. The new architecture adds one route layer (`/resources`, `/map`) with a landing page at `/`.  

@@ -66,6 +66,13 @@ Never commit `.env.local` to version control. Required secrets:
 - `mailto:` links constructed from `resourceEmail` (a database field) and Claude-generated content — the email address is parameterized via `encodeURIComponent`, not interpolated directly; no injection risk
 - **Post-MVP**: validate `allAnswers.length <= 5` and `extractedAnswer.maxLength` server-side to prevent prompt-stuffing attacks
 
+### Map Feature — Voice Transcript + External Logo Service (Feature: utah-startup-map)
+- `/api/map/parse-filter` accepts user voice transcript — truncate to 500 chars server-side before Claude call to prevent prompt stuffing
+- `NEXT_PUBLIC_MAPBOX_TOKEN` is a public token exposed to the client bundle — this is correct and expected for Mapbox public tokens; restrict it to the hackathon domain + localhost in the Mapbox dashboard access token settings
+- Clearbit logo URLs (`logo.clearbit.com/{domain}`) are fetched by the browser — only public company domains from `startups.json` are sent, no user data
+- `startups.json` is a static read-only file; no user writes are possible
+- Voice filter does not store transcripts server-side; Claude is called with only the current transcript, no session context
+
 ---
 
 ## Out of Scope (MVP)
