@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { copyDraftEmail } from "@/lib/results/sendEmail";
 
 interface MatchResult {
   id: string;
@@ -23,32 +24,11 @@ export function EmailPanel({ results }: EmailPanelProps) {
   if (!results.length) return null;
   const active = results[activeIndex];
 
-  const handleSend = async (result: MatchResult) => {
-    const body = result.draftEmail;
-    const subject = result.emailSubject;
-    const to = result.resourceEmail ?? "";
-
-    // Copy to clipboard first (in case the mail client truncates or fails)
-    try {
-      await navigator.clipboard.writeText(body);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard API may be blocked; degrade silently
-    }
-
-    // Build mailto — `to` must NOT be URI-encoded (mail clients won't decode `%40` to `@`).
-    // Only subject + body get encoded.
-    const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.slice(0, 1800))}`;
-
-    // Anchor-click pattern: triggers the mail client without leaving an empty popup tab
-    // and without unloading the page (which window.location.href can do in some browsers).
-    const a = document.createElement("a");
-    a.href = mailtoUrl;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleCopy = async (result: MatchResult) => {
+    if (!result.draftEmail) return;
+    await copyDraftEmail(result.draftEmail);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleVisitWebsite = (result: MatchResult) => {
@@ -189,7 +169,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
       >
         <button
           onClick={() =>
-            active.resourceEmail ? handleSend(active) : handleVisitWebsite(active)
+            active.resourceEmail ? handleCopy(active) : handleVisitWebsite(active)
           }
           disabled={!active.resourceEmail && !active.link}
           style={{
@@ -217,8 +197,8 @@ export function EmailPanel({ results }: EmailPanelProps) {
         >
           {active.resourceEmail
             ? copied
-              ? "Copied to clipboard ✓"
-              : "Send email →"
+              ? "Copied ✓"
+              : "Copy email"
             : "Visit website →"}
         </button>
       </div>

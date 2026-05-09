@@ -152,21 +152,45 @@ export function VoiceIntake({
           >
             Utah business resources, matched to your story.
           </p>
-          <button
-            onClick={begin}
+          <div
             style={{
-              padding: "12px 40px",
-              border: "1px solid white",
-              background: "transparent",
-              color: "white",
-              fontSize: "1rem",
-              fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              cursor: "pointer",
-              letterSpacing: "0.05em",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
             }}
           >
-            Find your resources →
-          </button>
+            <button
+              onClick={begin}
+              style={{
+                padding: "12px 40px",
+                border: "1px solid white",
+                background: "transparent",
+                color: "white",
+                fontSize: "1rem",
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Find your resources →
+            </button>
+            <button
+              onClick={switchToTextMode}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#666666",
+                fontSize: "0.8rem",
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                cursor: "pointer",
+                padding: 0,
+                textDecoration: "underline",
+              }}
+            >
+              type instead
+            </button>
+          </div>
         </div>
       )}
 
@@ -468,6 +492,8 @@ export function VoiceIntake({
               matchReason={result.matchReason}
               topics={result.topics}
               link={result.link}
+              resourceEmail={result.resourceEmail}
+              draftEmail={result.draftEmail}
             />
           ))}
         </div>
