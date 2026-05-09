@@ -1,13 +1,34 @@
 "use client";
 
+import { useState } from "react";
+import { copyDraftEmail } from "@/lib/results/sendEmail";
+
 interface ResourceCardProps {
   title: string;
   matchReason: string;
   topics: string[];
   link: string;
+  resourceEmail?: string | null;
+  draftEmail?: string;
 }
 
-export function ResourceCard({ title, matchReason, topics, link }: ResourceCardProps) {
+export function ResourceCard({
+  title,
+  matchReason,
+  topics,
+  link,
+  resourceEmail,
+  draftEmail,
+}: ResourceCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!resourceEmail || !draftEmail) return;
+    await copyDraftEmail(draftEmail);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div
       style={{
@@ -60,6 +81,25 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
             </span>
           ))}
         </div>
+      )}
+      {resourceEmail && draftEmail && (
+        <button
+          onClick={handleCopy}
+          style={{
+            alignSelf: "flex-start",
+            padding: "8px 16px",
+            border: "1px solid #2a5e49",
+            background: "transparent",
+            color: "#2a5e49",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            letterSpacing: "0.03em",
+            marginTop: "4px",
+          }}
+        >
+          {copied ? "Copied ✓" : "Copy email"}
+        </button>
       )}
       {link && (
         <a
