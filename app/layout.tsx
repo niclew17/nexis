@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Utah's Nexis — Find Your Utah Business Resources",
   description:
-    "Answer four questions by voice. Get personalized Utah state resources in under two minutes.",
+    "Answer six questions by voice. Get personalized Utah state resources in under two minutes.",
 };
 
 const instrumentSerif = Instrument_Serif({

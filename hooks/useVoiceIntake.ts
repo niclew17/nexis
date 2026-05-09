@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
 import { useDeepgram, MicDeniedError } from "@/hooks/useDeepgram";
 import { createClient } from "@/lib/supabase/client";
+import type { FounderInfo } from "@/lib/matching/draftEmails";
 
 export type IntakeState =
   | "idle"
@@ -81,6 +82,8 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
   inputModeRef.current = inputMode;
   const activeFilterIdsRef = useRef<string[]>([]);
   activeFilterIdsRef.current = activeFilterIds;
+  // Captured from Q0 — passed to match-resources for personalized email generation
+  const founderInfoRef = useRef<FounderInfo | null>(null);
 
   const sessionId = user?.id ?? null;
   const triggerProcessRef = useRef<(() => void) | null>(null);
@@ -139,7 +142,13 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
           mappedValues: string[];
           remainingIds: string[];
           isAnswered: boolean;
+          founderInfo?: FounderInfo;
         };
+
+        // Q0: capture founder info for later use in email drafting
+        if (questionIndex === 0 && data.founderInfo) {
+          founderInfoRef.current = data.founderInfo;
+        }
 
         const newAnswer: ConfirmedAnswer = {
           questionIndex,
@@ -151,13 +160,13 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
         const updatedAnswers = [...allAnswers, newAnswer];
         setConfirmedAnswers(updatedAnswers);
 
-        // Update the filter pool after Q1-Q4
-        if (questionIndex < 4) {
+        // Update the filter pool after Q1-Q4 (skip Q0 — no SQL filter on founder info)
+        if (questionIndex >= 1 && questionIndex < 5) {
           setActiveFilterIds(data.remainingIds ?? currentFilterIds);
         }
 
-        if (questionIndex === 4) {
-          // Q5: free-form → embedding → top 5
+        if (questionIndex === 5) {
+          // Q5: free-form → match
           setState("complete");
 
           const matchRes = await fetch("/api/match-resources", {
@@ -167,6 +176,7 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
               sessionId: currentSessionId,
               filterIds: currentFilterIds,
               freeFormAnswer: rawTranscript,
+              founderInfo: founderInfoRef.current,
               allAnswers: confirmedAnswersRef.current.map(a => ({
                 questionIndex: a.questionIndex,
                 extractedAnswer: a.extractedAnswer,
@@ -266,7 +276,7 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
     const updated = [...confirmedAnswersRef.current, emptyAnswer];
     setConfirmedAnswers(updated);
 
-    if (idx === 4) {
+    if (idx === 5) {
       setState("complete");
     } else {
       const nextIndex = idx + 1;

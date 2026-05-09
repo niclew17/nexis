@@ -6,6 +6,12 @@ export interface AnswerSummary {
   extractedAnswer: string;
 }
 
+export interface FounderInfo {
+  name: string;
+  businessName: string;
+  role: string;
+}
+
 export interface EmailedResult {
   id: string;
   title: string;
@@ -18,10 +24,11 @@ export interface EmailedResult {
 }
 
 const QUESTION_LABELS = [
-  "Type of help needed",
-  "Industry",
-  "Location in Utah",
-  "Community identity",
+  "Founder info",          // 0 (new)
+  "Type of help needed",   // 1 (was 0)
+  "Industry",              // 2 (was 1)
+  "Location in Utah",      // 3 (was 2)
+  "Community identity",    // 4 (was 3)
 ];
 
 function parseJsonSafely(text: string): Record<string, unknown> {
@@ -32,7 +39,8 @@ function parseJsonSafely(text: string): Record<string, unknown> {
 export async function draftEmails(
   matches: RankedMatch[],
   allAnswers: AnswerSummary[],
-  freeFormAnswer: string
+  freeFormAnswer: string,
+  founderInfo?: FounderInfo | null
 ): Promise<EmailedResult[]> {
   if (matches.length === 0) return [];
 
@@ -56,7 +64,17 @@ export async function draftEmails(
     )
     .join(",\n");
 
+  const founderIntro = founderInfo?.name
+    ? `The founder's name is ${founderInfo.name}${founderInfo.businessName ? `, and their business is called ${founderInfo.businessName}` : ""}${founderInfo.role ? ` (${founderInfo.role})` : ""}.`
+    : "";
+
+  const signatureLine = founderInfo?.name
+    ? `Close with:\nThank you,\n${founderInfo.name}${founderInfo.businessName ? `\n${founderInfo.businessName}` : ""}`
+    : `Close with:\nThank you,`;
+
   const prompt = `You are helping a Utah founder reach out to business resources they've been matched with.
+
+${founderIntro}
 
 Founder profile (from their voice intake):
 ${answerContext}
@@ -75,10 +93,10 @@ ${emailEntries}
 }
 
 Rules for each email:
-- Open with who the founder is and what they are building
+- Open with who the founder is and what they are building${founderInfo?.name ? ` — use their real name (${founderInfo.name}) and business name (${founderInfo.businessName || "their venture"})` : ""}
 - Explain why this specific resource is relevant to their situation
 - Include a clear call to action (request a meeting, ask about eligibility, etc.)
-- Close professionally without a signature name — end with "Thank you," on its own line
+- ${signatureLine}
 - Do NOT use placeholder text like [Your Name] or [Resource Name] — use the actual resource title
 - Keep each email under 250 words`;
 

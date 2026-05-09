@@ -17,8 +17,14 @@ export function BubbleField({ bubbles, activeCount, onBubbleEliminated }: Bubble
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
-  // Tooltip: always above the bubble's top edge (never at cursor position)
-  const [tooltip, setTooltip] = useState<{ title: string; x: number; y: number } | null>(null);
+  // Tooltip: store raw bubble center + radius; positioning computed at render time
+  // so we can clamp to canvas bounds and flip when near top edge.
+  const [tooltip, setTooltip] = useState<{
+    title: string;
+    bx: number;
+    by: number;
+    radius: number;
+  } | null>(null);
 
   // Selected bubble for popup
   const [selectedBubble, setSelectedBubble] = useState<BubbleNode | null>(null);
@@ -47,10 +53,9 @@ export function BubbleField({ bubbles, activeCount, onBubbleEliminated }: Bubble
     nodeSettersRef.current.delete(id);
   }, []);
 
-  // Hover: receives bubble center (bx, by) + radius from ResourceBubble MotionValues.
-  // Positions tooltip above the bubble's top edge regardless of cursor position inside bubble.
+  // Hover: store raw bubble center (bx, by) + radius; final placement computed at render time.
   const handleBubbleHover = useCallback((title: string, bx: number, by: number, radius: number) => {
-    setTooltip({ title, x: bx, y: by - radius - 12 });
+    setTooltip({ title, bx, by, radius });
   }, []);
 
   const handleBubbleLeave = useCallback(() => {
@@ -92,32 +97,46 @@ export function BubbleField({ bubbles, activeCount, onBubbleEliminated }: Bubble
     >
       <BubbleCounter count={activeCount} />
 
-      {/* Tooltip — always above bubble top edge, centered on bubble x; hidden while popup open */}
-      {tooltip && !selectedBubble && (
-        <div
-          style={{
-            position: "absolute",
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: "translate(-50%, -100%)",
-            pointerEvents: "none",
-            backgroundColor: "#0a0a0a",
-            border: "1px solid #333",
-            borderRadius: "4px",
-            padding: "5px 10px",
-            color: "white",
-            fontSize: "0.75rem",
-            fontFamily: "ui-sans-serif, system-ui, -apple-system",
-            whiteSpace: "nowrap",
-            zIndex: 20,
-            maxWidth: "280px",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {tooltip.title}
-        </div>
-      )}
+      {/* Tooltip — smart positioning: clamps X to canvas bounds; flips below when near top edge */}
+      {tooltip && !selectedBubble && (() => {
+        const HALF_W = 144; // half of maxWidth (288px) — used for X clamping margin
+        const FLIP_THRESHOLD = 48; // px from top edge below which we flip the tooltip below the bubble
+        const showBelow = (tooltip.by - tooltip.radius - 12) < FLIP_THRESHOLD;
+        const clampedX = Math.max(
+          HALF_W + 4,
+          Math.min(canvasSize.width > 0 ? canvasSize.width - HALF_W - 4 : HALF_W + 4, tooltip.bx)
+        );
+        const displayY = showBelow
+          ? tooltip.by + tooltip.radius + 12
+          : tooltip.by - tooltip.radius - 12;
+        const displayTransform = showBelow ? "translate(-50%, 0)" : "translate(-50%, -100%)";
+
+        return (
+          <div
+            style={{
+              position: "absolute",
+              left: clampedX,
+              top: displayY,
+              transform: displayTransform,
+              pointerEvents: "none",
+              backgroundColor: "#0a0a0a",
+              border: "1px solid #333",
+              borderRadius: "4px",
+              padding: "5px 10px",
+              color: "white",
+              fontSize: "0.75rem",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              maxWidth: "288px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {tooltip.title}
+          </div>
+        );
+      })()}
 
       <svg
         width={canvasSize.width}

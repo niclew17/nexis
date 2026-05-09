@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import type { UseVoiceIntakeReturn } from "@/hooks/useVoiceIntake";
 import { INTAKE_QUESTIONS } from "@/lib/intake/filterConstants";
 import { InstructionSlide } from "./InstructionSlide";
@@ -177,9 +178,75 @@ export function VoiceIntake({
 
       {/* Complete — loading results */}
       {!micError && state === "complete" && !matchResults && (
-        <p style={{ fontFamily: "var(--font-instrument-serif)", fontStyle: "italic", fontSize: "1.25rem", color: "white", textAlign: "center", margin: 0 }}>
-          Finding your matches...
-        </p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "28px", width: "100%" }}>
+          {/* Orbiting accent ring above the text */}
+          <div style={{ position: "relative", width: "56px", height: "56px" }}>
+            <motion.div
+              style={{
+                position: "absolute",
+                inset: 0,
+                border: "1px solid #2a5e49",
+                borderTopColor: "transparent",
+                borderRadius: "50%",
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "10px",
+                height: "10px",
+                marginTop: "-5px",
+                marginLeft: "-5px",
+                borderRadius: "50%",
+                backgroundColor: "#2a5e49",
+              }}
+              animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+
+          <motion.p
+            style={{
+              fontFamily: "var(--font-instrument-serif)",
+              fontStyle: "italic",
+              fontSize: "1.25rem",
+              color: "white",
+              textAlign: "center",
+              margin: 0,
+            }}
+            animate={{ opacity: [0.65, 1, 0.65] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            Finding your matches
+          </motion.p>
+
+          {/* Three dots that pulse in sequence */}
+          <div style={{ display: "flex", gap: "10px" }}>
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2a5e49",
+                  display: "block",
+                }}
+                animate={{ opacity: [0.25, 1, 0.25], scale: [0.8, 1.15, 0.8] }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Complete — inline results */}

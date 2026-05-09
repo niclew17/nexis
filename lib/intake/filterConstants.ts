@@ -78,26 +78,31 @@ export interface IntakeQuestion {
 export const INTAKE_QUESTIONS: IntakeQuestion[] = [
   {
     index: 0,
+    text: "Before we start — what's your name, and what's the name of your business or venture? Feel free to mention your role or title too.",
+    column: null,
+  },
+  {
+    index: 1,
     text: "What kind of help does your business need right now? For example — raising funding or loans, starting a business, growing into late stage, marketing and sales, taxes and finance, international trade, or connecting with entrepreneur communities.",
     column: "topics",
   },
   {
-    index: 1,
+    index: 2,
     text: "What industry is your business in? For example — software and IT, manufacturing, agriculture, hospitality and food services, life sciences and healthcare, financial services, aerospace and defense, consumer packaged goods, or arts and entertainment.",
     column: "industries",
   },
   {
-    index: 2,
+    index: 3,
     text: "Where in Utah are you based or looking for support? You can name a city, county, or region — like Salt Lake City, Utah County, Cache Valley, or southern Utah.",
     column: "locations",
   },
   {
-    index: 3,
+    index: 4,
     text: "Do any of these describe you or your founding team? Veteran, woman-owned, rural, student, multicultural, or new American. You can name one, a few, or skip if none apply.",
     column: "communities",
   },
   {
-    index: 4,
+    index: 5,
     text: "Tell me more about your specific business and exactly what you need help with right now. Be as specific as you like — describe your product or service, your current stage, and your biggest challenge.",
     column: null,
   },

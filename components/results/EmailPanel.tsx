@@ -28,6 +28,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
     const subject = result.emailSubject;
     const to = result.resourceEmail ?? "";
 
+    // Copy to clipboard first (in case the mail client truncates or fails)
     try {
       await navigator.clipboard.writeText(body);
       setCopied(true);
@@ -36,8 +37,24 @@ export function EmailPanel({ results }: EmailPanelProps) {
       // clipboard API may be blocked; degrade silently
     }
 
-    const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.slice(0, 1800))}`;
-    window.open(mailtoUrl, "_blank");
+    // Build mailto — `to` must NOT be URI-encoded (mail clients won't decode `%40` to `@`).
+    // Only subject + body get encoded.
+    const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.slice(0, 1800))}`;
+
+    // Anchor-click pattern: triggers the mail client without leaving an empty popup tab
+    // and without unloading the page (which window.location.href can do in some browsers).
+    const a = document.createElement("a");
+    a.href = mailtoUrl;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleVisitWebsite = (result: MatchResult) => {
+    if (result.link) {
+      window.open(result.link, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -160,7 +177,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
         </p>
       </div>
 
-      {/* Send button */}
+      {/* Action button — Send email when address is on file, else Visit website */}
       <div
         style={{
           padding: "20px 28px",
@@ -171,7 +188,10 @@ export function EmailPanel({ results }: EmailPanelProps) {
         }}
       >
         <button
-          onClick={() => handleSend(active)}
+          onClick={() =>
+            active.resourceEmail ? handleSend(active) : handleVisitWebsite(active)
+          }
+          disabled={!active.resourceEmail && !active.link}
           style={{
             flex: 1,
             padding: "12px 24px",
@@ -180,11 +200,13 @@ export function EmailPanel({ results }: EmailPanelProps) {
             color: "#2a5e49",
             fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "0.875rem",
-            cursor: "pointer",
+            cursor: !active.resourceEmail && !active.link ? "not-allowed" : "pointer",
             letterSpacing: "0.05em",
             transition: "background 0.2s ease-out, color 0.2s ease-out",
+            opacity: !active.resourceEmail && !active.link ? 0.4 : 1,
           }}
           onMouseEnter={(e) => {
+            if (!active.resourceEmail && !active.link) return;
             (e.currentTarget as HTMLElement).style.background = "#2a5e49";
             (e.currentTarget as HTMLElement).style.color = "black";
           }}
@@ -193,20 +215,12 @@ export function EmailPanel({ results }: EmailPanelProps) {
             (e.currentTarget as HTMLElement).style.color = "#2a5e49";
           }}
         >
-          {copied ? "Copied to clipboard ✓" : "Send email →"}
+          {active.resourceEmail
+            ? copied
+              ? "Copied to clipboard ✓"
+              : "Send email →"
+            : "Visit website →"}
         </button>
-        {!active.resourceEmail && (
-          <p
-            style={{
-              fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.75rem",
-              color: "#555",
-              margin: 0,
-            }}
-          >
-            No email on file — visit website
-          </p>
-        )}
       </div>
     </div>
   );

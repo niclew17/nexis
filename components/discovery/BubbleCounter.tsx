@@ -6,13 +6,18 @@ export function BubbleCounter({ count }: { count: number }) {
     <div
       style={{
         position: "absolute",
-        top: "16px",
-        right: "16px",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        padding: "10px 18px",
+        backgroundColor: "#0a0a0a",
+        border: "1px solid #1e1e1e",
         display: "flex",
         flexDirection: "column",
-        alignItems: "flex-end",
+        alignItems: "center",
         gap: "2px",
         pointerEvents: "none",
+        zIndex: 10,
       }}
     >
       <AnimatePresence mode="wait">
@@ -37,7 +42,7 @@ export function BubbleCounter({ count }: { count: number }) {
         style={{
           fontFamily: "ui-sans-serif, system-ui, -apple-system",
           fontSize: "0.625rem",
-          color: "#444",
+          color: "#555",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
         }}

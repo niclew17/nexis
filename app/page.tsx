@@ -91,6 +91,7 @@ function HomeContent() {
       {/* Left — voice intake */}
       <div
         style={{
+          position: "relative",
           width: "45%",
           minWidth: "360px",
           maxWidth: "560px",
@@ -101,9 +102,28 @@ function HomeContent() {
           overflowY: "auto",
         }}
       >
+        {/* Nexis logo — absolute, centered horizontally so it doesn't disturb vertical centering of intake content */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="Nexis"
+          style={{
+            position: "absolute",
+            top: "32px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            height: "72px",
+            width: "auto",
+            opacity: 0.9,
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
+
         {/* margin: auto top/bottom centers content when shorter than panel;
-            collapses to 0 when content overflows, making top scrollable */}
-        <div style={{ marginTop: "auto", marginBottom: "auto", width: "100%", padding: "64px 0" }}>
+            collapses to 0 when content overflows, making top scrollable. Top padding
+            (128px) clears the absolute-positioned logo so results content doesn't overlap. */}
+        <div style={{ marginTop: "auto", marginBottom: "auto", width: "100%", padding: "128px 0 64px" }}>
           <VoiceIntake {...intake} />
         </div>
       </div>
