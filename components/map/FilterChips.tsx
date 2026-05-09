@@ -4,23 +4,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMapStore } from "@/lib/map/store";
 import { COLORS } from "@/lib/map/mapConfig";
 
-type FilterType = "stage" | "size" | "section";
+type FilterEntry =
+  | { type: "stage" | "size" | "section" | "county"; value: string }
+  | { type: "hiring"; value: "Hiring only" };
 
 export function FilterChips() {
   const { filters, setFilters, clearFilters } = useMapStore();
 
-  const allFilters: Array<{ type: FilterType; value: string }> = [
+  const allFilters: FilterEntry[] = [
     ...filters.stage.map((v) => ({ type: "stage" as const, value: v })),
     ...filters.size.map((v) => ({ type: "size" as const, value: v })),
     ...filters.section.map((v) => ({ type: "section" as const, value: v })),
+    ...filters.county.map((v) => ({ type: "county" as const, value: v })),
+    ...(filters.hiring
+      ? [{ type: "hiring" as const, value: "Hiring only" as const }]
+      : []),
   ];
 
   if (allFilters.length === 0) return null;
 
-  const removeFilter = (type: FilterType, value: string) => {
+  const removeFilter = (entry: FilterEntry) => {
+    if (entry.type === "hiring") {
+      setFilters({ ...filters, hiring: false });
+      return;
+    }
     setFilters({
       ...filters,
-      [type]: filters[type].filter((v) => v !== value),
+      [entry.type]: filters[entry.type].filter((v) => v !== entry.value),
     });
   };
 
@@ -34,9 +44,9 @@ export function FilterChips() {
       }}
     >
       <AnimatePresence>
-        {allFilters.map(({ type, value }) => (
+        {allFilters.map((entry) => (
           <motion.div
-            key={`${type}-${value}`}
+            key={`${entry.type}-${entry.value}`}
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
@@ -48,6 +58,7 @@ export function FilterChips() {
               padding: "5px 12px",
               backgroundColor: "rgba(0,0,0,0.82)",
               backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
               border: `1px solid ${COLORS.borderAccent}`,
               fontFamily: "ui-sans-serif, system-ui, -apple-system",
               fontSize: "0.75rem",
@@ -55,9 +66,10 @@ export function FilterChips() {
               letterSpacing: "0.04em",
             }}
           >
-            {value}
+            {entry.value}
             <button
-              onClick={() => removeFilter(type, value)}
+              type="button"
+              onClick={() => removeFilter(entry)}
               style={{
                 background: "none",
                 border: "none",
@@ -67,7 +79,7 @@ export function FilterChips() {
                 lineHeight: 1,
                 fontSize: "0.875rem",
               }}
-              aria-label={`Remove ${value} filter`}
+              aria-label={`Remove ${entry.value} filter`}
             >
               ×
             </button>
@@ -75,6 +87,7 @@ export function FilterChips() {
         ))}
         {allFilters.length > 1 && (
           <motion.button
+            key="clear-all"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

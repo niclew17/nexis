@@ -15,15 +15,23 @@ interface MapStore {
   setVoicePromptVisible: (visible: boolean) => void;
 }
 
+const EMPTY_FILTERS: FilterCriteria = {
+  stage: [],
+  size: [],
+  section: [],
+  county: [],
+  hiring: false,
+};
+
 export const useMapStore = create<MapStore>()((set) => ({
   selectedStartup: null,
-  filters: { stage: [], size: [], section: [] },
+  filters: { ...EMPTY_FILTERS },
   mode: "2d",
   isListening: false,
   voicePromptVisible: false,
   setSelectedStartup: (startup) => set({ selectedStartup: startup }),
   setFilters: (filters) => set({ filters }),
-  clearFilters: () => set({ filters: { stage: [], size: [], section: [] } }),
+  clearFilters: () => set({ filters: { ...EMPTY_FILTERS } }),
   setMode: (mode) => set({ mode }),
   setIsListening: (isListening) => set({ isListening }),
   setVoicePromptVisible: (voicePromptVisible) => set({ voicePromptVisible }),

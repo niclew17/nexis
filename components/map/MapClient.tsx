@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Startup } from "@/lib/map/types";
 import { useMapStore } from "@/lib/map/store";
+import { COLORS } from "@/lib/map/mapConfig";
 import { MapSidebar } from "./MapSidebar";
 import { VoiceFilterButton } from "./VoiceFilterButton";
 import { FilterChips } from "./FilterChips";
+import { FilterDrawer } from "./filters/FilterDrawer";
 
 // Mapbox GL JS requires browser APIs (Worker, Canvas) — disable SSR for the
 // MapView component. Next 16 requires this dynamic import to live in a Client
@@ -87,6 +89,15 @@ export function MapClient({ startups }: MapClientProps) {
   const showSidebar = isMobile === false;
   const showMobileChrome = isMobile === true;
 
+  const filters = useMapStore((s) => s.filters);
+  const totalActiveFilters =
+    filters.stage.length +
+    filters.size.length +
+    filters.section.length +
+    filters.county.length +
+    (filters.hiring ? 1 : 0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   return (
     <div
       style={{
@@ -108,12 +119,15 @@ export function MapClient({ startups }: MapClientProps) {
           flexDirection: "column",
         }}
       >
-        <MapSidebar />
+        <MapSidebar startups={startups} />
       </div>
       <div style={{ flex: 1, height: "100%", position: "relative" }}>
         <MapView startups={startups} />
+
         {showMobileChrome && (
           <>
+            {/* Mobile-only chip strip overlay — desktop renders this inside
+                MapSidebar so it doesn't sit on top of the map. */}
             <div
               style={{
                 position: "absolute",
@@ -129,6 +143,36 @@ export function MapClient({ startups }: MapClientProps) {
             >
               <FilterChips />
             </div>
+
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              style={{
+                position: "absolute",
+                bottom: "100px",
+                left: "16px",
+                zIndex: 50,
+                padding: "8px 14px",
+                backgroundColor: "rgba(0,0,0,0.85)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: `1px solid ${COLORS.borderAccent}`,
+                color: COLORS.accent,
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.8125rem",
+                letterSpacing: "0.04em",
+                cursor: "pointer",
+              }}
+              aria-label="Open filters"
+            >
+              Filters
+              {totalActiveFilters > 0 ? ` (${totalActiveFilters})` : ""}
+            </button>
+            <FilterDrawer
+              startups={startups}
+              isOpen={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+            />
             <VoiceFilterButton />
           </>
         )}

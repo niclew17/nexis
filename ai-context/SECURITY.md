@@ -83,6 +83,15 @@ Never commit `.env.local` to version control. Required secrets:
 - `signUp` for an email that already exists returns a generic error in the OTP step — we surface the message and tell the user to log in instead. We do not auto-log-in or merge accounts (anonymous data on the map is unused).
 - `verifyOtp({ type: 'signup' })` swaps the browser session from anonymous to the new pending user. Existing intake data tied to the prior anonymous UUID stays orphaned — acceptable for hackathon scope; account merging is out of scope.
 
+### Map Filter Expansion (Feature: map-filter-expansion)
+- The voice transcript still flows through `/api/map/parse-filter`; the new prompt extends to county + hiring. The route applies a server-side whitelist on `parsed.county` against `UTAH_COUNTIES_SET` (`lib/map/filterConstants.ts`), dropping any unrecognized name. A motivated user (or Claude hallucinating "California") cannot inject arbitrary strings into the filter store.
+- `parsed.hiring` is coerced to a strict boolean (`typeof === 'boolean' ? value : false`); any other shape (array, string, null) is dropped.
+- Stage / size / section arrays are filtered to `typeof === 'string'` entries before being returned, so a malformed Claude response cannot inject non-string values into the filter store.
+- The county column on `startups` has no CHECK constraint; the canonical-list enforcement is application-level. This is intentional — a CHECK now would lock us into the 29-county taxonomy if Utah ever added or merged a county. The whitelist on read is the right enforcement layer.
+- Facet counts (`lib/map/facets.ts`) are computed entirely client-side from the already-fetched startups array. No server query, no PII, no surface for injection.
+- `public/utah-counties.geojson` is a read-only static asset served by Next.js. It contains no PII; it's the same census-derived data Mapbox already serves through their tile system.
+- **Post-MVP**: rate-limit `/api/map/parse-filter` per IP. Today it's open to anyone with a valid request; a determined attacker could cost-spike the Anthropic bill. Same gap exists across all `/api/map/*` and `/api/discovery/*` routes; document once, fix together.
+
 ### Map Photo Gallery (Feature: startup-photo-gallery)
 - The `startup-photos` bucket is **public read** but has NO `storage.objects` RLS policy granting client-side writes. All writes go through service-role API routes (`/api/startups/photos/{upload,delete,reorder}`), so users cannot upload to or delete from the bucket directly with their JWT.
 - Per-photo path scheme is `<slug>/<uuid>.<ext>`. The `<slug>` is read from the authenticated startup row, NOT the client request — a user with a valid session for startup A cannot upload into startup B's prefix because the route resolves the slug-to-row first and re-checks `claimed_by === user.id`.

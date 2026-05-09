@@ -1,14 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { useMapStore } from "@/lib/map/store";
 import { COLORS } from "@/lib/map/mapConfig";
+import type { Startup } from "@/lib/map/types";
 import { VoiceFilterButton } from "./VoiceFilterButton";
+import { FilterPanel } from "./filters/FilterPanel";
 import { FilterChips } from "./FilterChips";
 
-export function MapSidebar() {
-  const { filters, isListening } = useMapStore();
-  const hasFilters =
-    filters.stage.length + filters.size.length + filters.section.length > 0;
+interface MapSidebarProps {
+  startups: Startup[];
+}
+
+type SidebarMode = "voice" | "filters";
+
+export function MapSidebar({ startups }: MapSidebarProps) {
+  const { isListening } = useMapStore();
+  // Default to voice — it's the headline interaction. Users can toggle to the
+  // tap-driven FilterPanel when they want to browse what's available. The
+  // store's filters apply regardless of which view is active, so toggling
+  // doesn't lose any in-flight selections.
+  const [mode, setMode] = useState<SidebarMode>("voice");
 
   return (
     <div
@@ -82,42 +94,29 @@ export function MapSidebar() {
               maxWidth: "360px",
             }}
           >
-            {isListening
-              ? "Listening — name a stage, sector, or company size."
-              : hasFilters
-              ? "Speak again to refine, or browse the highlighted markers."
-              : "Tap the mic and tell me what you're looking for, or explore the map."}
+            {mode === "voice"
+              ? isListening
+                ? "Listening — name a stage, sector, or company size."
+                : "Tap the mic and tell me what you're looking for."
+              : "Pick filters to narrow the map."}
           </p>
         </div>
 
-        <VoiceFilterButton variant="inline" />
+        <ModeToggle mode={mode} onChange={setMode} />
 
-        {hasFilters && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "12px",
-              maxWidth: "100%",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                fontSize: "0.6875rem",
-                color: COLORS.textDim,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-              }}
-            >
-              Filters
-            </span>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <FilterChips />
-            </div>
+        {mode === "voice" ? (
+          <VoiceFilterButton variant="inline" />
+        ) : (
+          <div style={{ width: "100%" }}>
+            <FilterPanel startups={startups} />
           </div>
         )}
+
+        {/* Active filters strip — visible regardless of which mode set them.
+            FilterChips self-hides when there's nothing active. */}
+        <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <FilterChips />
+        </div>
 
         <div
           style={{
@@ -188,5 +187,67 @@ export function MapSidebar() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface ModeToggleProps {
+  mode: SidebarMode;
+  onChange: (m: SidebarMode) => void;
+}
+
+function ModeToggle({ mode, onChange }: ModeToggleProps) {
+  return (
+    <div
+      role="tablist"
+      style={{
+        display: "inline-flex",
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: "999px",
+        padding: "3px",
+        gap: "2px",
+      }}
+    >
+      <ToggleButton
+        label="Voice"
+        active={mode === "voice"}
+        onClick={() => onChange("voice")}
+      />
+      <ToggleButton
+        label="Filters"
+        active={mode === "filters"}
+        onClick={() => onChange("filters")}
+      />
+    </div>
+  );
+}
+
+interface ToggleButtonProps {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+function ToggleButton({ label, active, onClick }: ToggleButtonProps) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      style={{
+        padding: "6px 16px",
+        borderRadius: "999px",
+        border: "none",
+        cursor: "pointer",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system",
+        fontSize: "0.75rem",
+        letterSpacing: "0.05em",
+        backgroundColor: active ? COLORS.accent : "transparent",
+        color: active ? "#000" : COLORS.textMuted,
+        transition: "background 0.15s ease-out, color 0.15s ease-out",
+      }}
+    >
+      {label}
+    </button>
   );
 }

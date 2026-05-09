@@ -118,6 +118,30 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Filters — Facet recomputation on every filter change (Feature: map-filter-expansion)
+**Impact:** Low  
+**Context:** `lib/map/facets.ts` iterates all 255 startups × 5 dimensions on every `filters` change to compute the per-option counts. At ~1,275 comparisons per change it's sub-millisecond, but if the dataset grows to 5,000+ rows the per-tap latency starts to bite (especially on mobile under animation contention).  
+**Ideal solution:** Maintain incremental facet indexes — a `Map<DimKey, Map<value, Set<slug>>>` built once at startup, then bitset-intersect on filter changes. Or move to server-side facets via a Postgres aggregation when the row count exceeds ~2,000.  
+**Workaround in place:** None — the math is fast enough at hackathon scale and `useMemo([startups, filters])` keeps it from running unnecessarily.
+
+---
+
+### Filters — Full Utah counties GeoJSON shipped client-side (Feature: map-filter-expansion)
+**Impact:** Low  
+**Context:** `public/utah-counties.geojson` (~50 KB) ships with the public bundle. The point-in-polygon helper reads the same file from disk for the backfill script and any future server-side insert. The client never actually needs the polygon data (FilterPanel uses the constant list, not the GeoJSON), so it's pure dead-weight in the public bundle.  
+**Ideal solution:** Two artifacts: ship a tiny `public/utah-counties-centroids.json` (~5 KB) for any future client visualization, and keep the polygon file at `data/utah-counties.geojson` (gitignored, fetched-on-build) for server-only consumption.  
+**Workaround in place:** None — 50 KB on a one-time fetch is acceptable.
+
+---
+
+### Filters — No marker clustering by county (Feature: map-filter-expansion)
+**Impact:** Low  
+**Context:** With a county filter active, a dense county like Salt Lake (~97 startups) still renders 97 individual HTML markers. At zoom <9 most overlap visually. The existing entry on HTML markers (`map-load-state-bugfix` adjacent) covers this generally; this entry calls out that the new filter doesn't help with at-zoom density.  
+**Ideal solution:** Use Mapbox's native `cluster: true` source at low zoom, swap to HTML markers at zoom ≥10. Compose with the filter so dim/full-opacity rules still apply within clusters.  
+**Workaround in place:** None — visual overlap is the same as the unfiltered map; the filter just tells you which markers are non-dim.
+
+---
+
 ### Photos — Plain `<img>` instead of `next/image` (Feature: startup-photo-gallery)
 **Impact:** Low  
 **Context:** The InfoPanel's HeroGallery and PhotoManager render photos via plain `<img>` tags rather than `next/image`. Reasons: the codebase already uses raw `<img>` for the existing Clearbit logo (`StartupMarker.tsx:42-52`) and avoiding `next/image` avoids the `next.config.ts` `images.domains` whitelist hassle. Trade-off: no automatic resizing, no format negotiation (WebP/AVIF), no lazy-load attribute beyond the browser default.  
