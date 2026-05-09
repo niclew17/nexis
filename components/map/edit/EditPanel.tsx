@@ -46,6 +46,7 @@ interface EditPanelProps {
   startup: Startup;
   onCancel: () => void;
   onSaved: (updated: Startup) => void;
+  onDeleted: () => void;
 }
 
 interface FormState {
@@ -122,10 +123,14 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
-export function EditPanel({ startup, onCancel, onSaved }: EditPanelProps) {
+export function EditPanel({ startup, onCancel, onSaved, onDeleted }: EditPanelProps) {
   const [form, setForm] = useState<FormState>(() => initialFormState(startup));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Two-step delete confirmation: first click arms, second confirms. Prevents
+  // accidental loss of the listing — deletion is irreversible.
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -180,6 +185,28 @@ export function EditPanel({ startup, onCancel, onSaved }: EditPanelProps) {
     const supabase = createClient();
     await supabase.auth.signOut();
     onCancel();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      return;
+    }
+    setIsDeleting(true);
+    setError(null);
+    const res = await fetch("/api/startups/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: startup.slug }),
+    });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      setIsDeleting(false);
+      setDeleteArmed(false);
+      setError(json.error ?? "Delete failed.");
+      return;
+    }
+    onDeleted();
   };
 
   return (
@@ -441,6 +468,106 @@ export function EditPanel({ startup, onCancel, onSaved }: EditPanelProps) {
         >
           Cancel
         </button>
+      </div>
+
+      {/* Danger zone — destructive owner-only action. Two-click arming
+          mirrors the GitHub-style "type repo name to confirm" intent
+          without forcing a typing step inside a phone-bottom-sheet. */}
+      <div
+        style={{
+          marginTop: "8px",
+          paddingTop: "16px",
+          borderTop: `1px solid ${COLORS.border}`,
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+        }}
+      >
+        <span style={labelStyle}>Danger zone</span>
+        {deleteArmed ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p
+              style={{
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.8125rem",
+                color: COLORS.text,
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Permanently remove <strong>{startup.name}</strong> from the map?
+              This can&apos;t be undone.
+            </p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || isSaving}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  border: "1px solid #ef4444",
+                  background: "transparent",
+                  color: "#ef4444",
+                  fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                  fontSize: "0.875rem",
+                  letterSpacing: "0.05em",
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  opacity: isDeleting ? 0.6 : 1,
+                  transition: "background 0.2s ease-out, color 0.2s ease-out",
+                }}
+                onMouseEnter={(e) => {
+                  if (isDeleting) return;
+                  (e.currentTarget as HTMLElement).style.background = "#ef4444";
+                  (e.currentTarget as HTMLElement).style.color = "black";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "#ef4444";
+                }}
+              >
+                {isDeleting ? "Deleting..." : "Yes, delete it"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteArmed(false)}
+                disabled={isDeleting}
+                style={{
+                  padding: "10px 16px",
+                  border: `1px solid ${COLORS.border}`,
+                  background: "transparent",
+                  color: COLORS.textMuted,
+                  fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                  fontSize: "0.875rem",
+                  letterSpacing: "0.05em",
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                }}
+              >
+                Keep
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isSaving}
+            style={{
+              alignSelf: "flex-start",
+              padding: "8px 14px",
+              border: "1px solid #ef4444",
+              background: "transparent",
+              color: "#ef4444",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "0.8125rem",
+              letterSpacing: "0.05em",
+              cursor: isSaving ? "not-allowed" : "pointer",
+              opacity: isSaving ? 0.6 : 1,
+            }}
+          >
+            Delete listing
+          </button>
+        )}
       </div>
 
       <button

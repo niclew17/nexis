@@ -400,6 +400,12 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
               setSelectedStartup(updated);
               setMode("view");
             }}
+            onDeleted={() => {
+              // Full reload to /map so the deleted marker disappears and no
+              // stale Zustand / mapbox-gl pooled state survives. Matches the
+              // existing full-nav-on-leave-map convention.
+              window.location.href = "/map";
+            }}
           />
         )}
       </motion.div>

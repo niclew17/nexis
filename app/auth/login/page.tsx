@@ -1,11 +1,15 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/login-form";
 
+// Suspense boundary required by Next 16's Cache Components — LoginForm reads
+// useSearchParams() to honor ?next=, which is dynamic and would otherwise
+// block the whole route from prerendering.
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <LoginForm />
-      </div>
-    </div>
+    <Suspense
+      fallback={<div style={{ minHeight: "100dvh", backgroundColor: "black" }} />}
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

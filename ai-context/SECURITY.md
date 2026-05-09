@@ -83,6 +83,12 @@ Never commit `.env.local` to version control. Required secrets:
 - `signUp` for an email that already exists returns a generic error in the OTP step — we surface the message and tell the user to log in instead. We do not auto-log-in or merge accounts (anonymous data on the map is unused).
 - `verifyOtp({ type: 'signup' })` swaps the browser session from anonymous to the new pending user. Existing intake data tied to the prior anonymous UUID stays orphaned — acceptable for hackathon scope; account merging is out of scope.
 
+### Map Owner Delete (Feature: claim-startup-flow / owner-delete)
+- `/api/startups/delete` requires `app_metadata.role === 'startupOwner'` AND `claimed_by === user.id` — same trust boundary as `/api/startups/update`. There is no admin bypass; every delete is owner-initiated.
+- The DELETE is double-eq'd on `(slug, claimed_by)` so any race between the ownership read and the write affects 0 rows rather than dropping a row owned by someone else.
+- Client UI (Edit panel danger zone) requires a two-click confirmation before sending the request. This is UX only — the server never sees the arming step and would honor a single direct POST from a verified owner.
+- After delete the user's `app_metadata.role` is unchanged (`startupOwner` is harmless without an owned row — they can re-create or claim another listing without an extra round-trip).
+
 ### Map Self-Serve Add Startup (Feature: self-serve-add-startup)
 - The `/api/startups/create` route is gated on a confirmed, non-anonymous Supabase user (`email_confirmed_at !== null`). Anonymous and unverified sessions are rejected with 401.
 - Free-mail providers are blocked server-side via `lib/startups/freeMailDomains.ts`. The client check on `CreateAuthStep` is UX only; the server re-runs the same lookup before the role/insert writes.

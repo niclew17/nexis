@@ -119,33 +119,72 @@ export function MapSidebar() {
           </div>
         )}
 
-        <div style={{ textAlign: "center", marginTop: "8px" }}>
-          <p
-            style={{
-              fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.8125rem",
-              color: COLORS.textMuted,
-              margin: 0,
-            }}
-          >
-            Don&apos;t see your company?
-          </p>
-          {/* Plain <a> matches the logo link's full-nav rationale above —
-              keeps mapbox-gl pooled state clean across navigations. */}
-          <a
-            href="/map/new"
-            style={{
-              display: "inline-block",
-              marginTop: "8px",
-              fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.875rem",
-              color: COLORS.accent,
-              textDecoration: "none",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Add it →
-          </a>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "20px",
+            marginTop: "8px",
+          }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.8125rem",
+                color: COLORS.textMuted,
+                margin: 0,
+              }}
+            >
+              Don&apos;t see your company?
+            </p>
+            {/* Plain <a> matches the logo link's full-nav rationale above —
+                keeps mapbox-gl pooled state clean across navigations. */}
+            <a
+              href="/map/new"
+              style={{
+                display: "inline-block",
+                marginTop: "8px",
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.875rem",
+                color: COLORS.accent,
+                textDecoration: "none",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Add it →
+            </a>
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.8125rem",
+                color: COLORS.textMuted,
+                margin: 0,
+              }}
+            >
+              Already an owner?
+            </p>
+            {/* ?next=/map sends the user back to the map after login so they
+                can immediately click their pin and hit Edit listing. */}
+            <a
+              href="/auth/login?next=/map"
+              style={{
+                display: "inline-block",
+                marginTop: "8px",
+                fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                fontSize: "0.875rem",
+                color: COLORS.accent,
+                textDecoration: "none",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Sign in →
+            </a>
+          </div>
         </div>
       </div>
     </div>
