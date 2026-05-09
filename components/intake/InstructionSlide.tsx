@@ -49,7 +49,7 @@ export function InstructionSlide({ onBegin }: { onBegin: () => void }) {
             margin: 0,
           }}
         >
-          Four questions. Under two minutes.
+          Six questions. Under two minutes.
         </p>
       </div>
       <button

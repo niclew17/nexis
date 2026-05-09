@@ -100,7 +100,11 @@ export function useDeepgram(onSilenceDetected: () => void): UseDeepgramReturn {
     });
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0 && socketRef.current) {
-        socketRef.current.sendMedia(event.data);
+        try {
+          socketRef.current.sendMedia(event.data);
+        } catch {
+          // socket closed between check and send (e.g. final dataavailable after stop()) — ignore
+        }
       }
     };
     recorder.start(250);
