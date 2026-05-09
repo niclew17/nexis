@@ -118,6 +118,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Add Startup — Hand-maintained free-mail blocklist + no rate limit (Feature: self-serve-add-startup)
+**Impact:** Low  
+**Context:** `lib/startups/freeMailDomains.ts` is a hand-curated list of ~20 canonical free-mail providers. Newer privacy-mail or regional providers will not be caught until the list is updated. Additionally, `/api/startups/create` has no rate limiting, so a determined actor with one valid corporate domain could spam the table with off-brand variations of their own listing (within the slug-uniqueness retry cap).  
+**Ideal solution:** Use a maintained blocklist library (e.g., the `disposable-email-domains` repo) refreshed via a build step; add per-IP rate limiting (5 creates/hour) and per-domain rate limiting (1 create/domain/day) at the route level via Vercel KV or Supabase Edge.  
+**Workaround in place:** Hand-maintained list covers the top 20 providers (~95% of expected misuse). The email-domain ↔ website-domain match plus Mapbox geocoding requirement raise the cost of casual abuse. Rate limiting deferred to post-MVP.
+
+---
+
 ## Template
 
 ```

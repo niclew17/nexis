@@ -89,3 +89,52 @@ export interface EditableStartupFields {
   year_founded?: number;
   jobs?: Array<{ title: string; url: string }>;
 }
+
+// Canonical enum value sets — shared by /api/startups/create and /update so
+// both routes agree on what's valid. Empty string is allowed in update (clear
+// to unknown) but rejected at the create-route level (every required field
+// must be non-empty on create).
+export const STAGE_VALUES: ReadonlySet<string> = new Set<StartupStage>([
+  "Pre-Seed",
+  "Seed",
+  "Series A",
+  "Series B+",
+  "Series D+",
+  "",
+]);
+
+export const EMPLOYEES_VALUES: ReadonlySet<string> = new Set<StartupEmployees>([
+  "1",
+  "2-10",
+  "11-50",
+  "51-200",
+  "201-500",
+  "200+",
+  "",
+]);
+
+export const SECTION_VALUES: ReadonlySet<string> = new Set<StartupSection>([
+  "B2B Software",
+  "FinTech",
+  "Security",
+  "Bio/Medical Tech",
+  "Energy",
+  "Consumer",
+  "Marketplaces",
+  "",
+]);
+
+// Required keys on the /api/startups/create payload (must be present and
+// non-empty). year_founded and hiring are optional.
+export const CREATE_STARTUP_REQUIRED_KEYS = [
+  "name",
+  "website",
+  "linkedin_url",
+  "address",
+  "description",
+  "stage",
+  "employees",
+  "section",
+] as const;
+
+export type CreateStartupRequiredKey = (typeof CREATE_STARTUP_REQUIRED_KEYS)[number];

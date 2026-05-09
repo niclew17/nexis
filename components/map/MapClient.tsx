@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Startup } from "@/lib/map/types";
+import { useMapStore } from "@/lib/map/store";
 import { MapSidebar } from "./MapSidebar";
 import { VoiceFilterButton } from "./VoiceFilterButton";
 import { FilterChips } from "./FilterChips";
@@ -61,6 +63,22 @@ export function MapClient({ startups }: MapClientProps) {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Deep-link: when the URL carries ?startup=<slug>, auto-open that pin's
+  // InfoPanel. Used by /map/new's redirect after a successful create and by
+  // the duplicate-domain notice's "Claim {name}" link. Runs once on mount;
+  // we deliberately don't include searchParams or startups in the deps so
+  // the user can close the panel without us re-opening it.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const slug = searchParams.get("startup");
+    if (!slug) return;
+    const match = startups.find((s) => s.slug === slug);
+    if (match) {
+      useMapStore.getState().setSelectedStartup(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Treat unknown as desktop for layout purposes — desktop is the larger
