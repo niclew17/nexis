@@ -72,13 +72,20 @@ export function StartupMarker({
           alignItems: "center",
           justifyContent: "center",
           opacity: isVisible ? 1 : 0.12,
+          // Belt-and-suspenders: pointer-events also goes on this wrapper so
+          // hidden markers can't capture hover/click even if a future
+          // react-map-gl change drops the style we set on <Marker>.
+          pointerEvents: isVisible ? "auto" : "none",
           transition: "opacity 0.2s ease-out",
         }}
       >
         <div
-          onClick={() => onClick(startup)}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          // Gate the handlers on isVisible so a filtered-out marker stays
+          // visually frozen — no hover scale, no glow — even if a stray
+          // pointer event leaks through Mapbox's own DOM wrapping.
+          onClick={isVisible ? () => onClick(startup) : undefined}
+          onMouseEnter={isVisible ? () => setHovered(true) : undefined}
+          onMouseLeave={isVisible ? () => setHovered(false) : undefined}
           style={{
             width: RADIUS * 2,
             height: RADIUS * 2,
@@ -87,20 +94,26 @@ export function StartupMarker({
               ? `3px solid ${COLORS.accentBright}`
               : `2px solid ${COLORS.accent}`,
             overflow: "hidden",
-            cursor: "pointer",
+            cursor: isVisible ? "pointer" : "default",
             backgroundColor: COLORS.surface,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             transition:
               "transform 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out",
-            transform: hovered || isActive ? "scale(1.2)" : "scale(1)",
-            boxShadow: isActive
+            // Filtered-out markers stay at scale(1) and lose their hover glow
+            // regardless of any stale `hovered` state.
+            transform:
+              isVisible && (hovered || isActive) ? "scale(1.2)" : "scale(1)",
+            boxShadow: !isVisible
+              ? "none"
+              : isActive
               ? `0 0 12px ${COLORS.accentDim}, 0 0 4px ${COLORS.accent}`
               : hovered
               ? `0 0 6px ${COLORS.accentDim}`
               : "0 2px 6px rgba(0,0,0,0.5)",
-            animation: isActive ? "markerPulse 2s ease-out infinite" : "none",
+            animation:
+              isVisible && isActive ? "markerPulse 2s ease-out infinite" : "none",
           }}
         >
           {!imgError && startup.logo_url ? (

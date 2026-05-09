@@ -88,10 +88,16 @@ export function MapView({ startups }: MapViewProps) {
 
   const isVisible = useCallback(
     (startup: Startup): boolean => {
-      const { stage, size, section } = filters;
+      const { stage, size, section, county, hiring } = filters;
       if (stage.length && !stage.includes(startup.stage)) return false;
       if (size.length && !size.includes(startup.employees)) return false;
       if (section.length && !section.includes(startup.section)) return false;
+      // A startup with county === null/undefined (backfill couldn't resolve)
+      // is invisible under any active county filter — the user explicitly
+      // asked for a county and we don't know this row's.
+      if (county.length && (!startup.county || !county.includes(startup.county)))
+        return false;
+      if (hiring && !startup.hiring) return false;
       return true;
     },
     [filters]

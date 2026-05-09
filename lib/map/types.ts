@@ -35,6 +35,7 @@ export interface Startup {
   address: string;
   lat: number;
   lng: number;
+  county?: string;         // derived from lat/lng via point-in-polygon; null for off-map rows
   description: string;
   website: string;
   domain: string;          // extracted from website, used for clearbit logo
@@ -56,6 +57,8 @@ export interface FilterCriteria {
   stage: string[];
   size: string[];
   section: string[];
+  county: string[];
+  hiring: boolean;
 }
 
 // Fields the /api/startups/update route accepts in `patch`. Used both as the

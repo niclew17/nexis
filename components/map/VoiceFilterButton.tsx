@@ -45,6 +45,8 @@ export function VoiceFilterButton({ variant = "floating" }: VoiceFilterButtonPro
         stage: string[];
         size: string[];
         section: string[];
+        county: string[];
+        hiring: boolean;
       };
       setFilters(filters);
     } catch (err) {
