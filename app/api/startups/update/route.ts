@@ -2,37 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { geocodeAddress } from "@/lib/startups/geocode";
-import { EDITABLE_STARTUP_KEYS } from "@/lib/map/types";
-
-const STAGE_VALUES = new Set([
-  "Pre-Seed",
-  "Seed",
-  "Series A",
-  "Series B+",
-  "Series D+",
-  "",
-]);
-
-const EMPLOYEES_VALUES = new Set([
-  "1",
-  "2-10",
-  "11-50",
-  "51-200",
-  "201-500",
-  "200+",
-  "",
-]);
-
-const SECTION_VALUES = new Set([
-  "B2B Software",
-  "FinTech",
-  "Security",
-  "Bio/Medical Tech",
-  "Energy",
-  "Consumer",
-  "Marketplaces",
-  "",
-]);
+import {
+  EDITABLE_STARTUP_KEYS,
+  STAGE_VALUES,
+  EMPLOYEES_VALUES,
+  SECTION_VALUES,
+} from "@/lib/map/types";
 
 interface JobEntry {
   title: string;

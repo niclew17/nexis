@@ -83,6 +83,17 @@ Never commit `.env.local` to version control. Required secrets:
 - `signUp` for an email that already exists returns a generic error in the OTP step — we surface the message and tell the user to log in instead. We do not auto-log-in or merge accounts (anonymous data on the map is unused).
 - `verifyOtp({ type: 'signup' })` swaps the browser session from anonymous to the new pending user. Existing intake data tied to the prior anonymous UUID stays orphaned — acceptable for hackathon scope; account merging is out of scope.
 
+### Map Self-Serve Add Startup (Feature: self-serve-add-startup)
+- The `/api/startups/create` route is gated on a confirmed, non-anonymous Supabase user (`email_confirmed_at !== null`). Anonymous and unverified sessions are rejected with 401.
+- Free-mail providers are blocked server-side via `lib/startups/freeMailDomains.ts`. The client check on `CreateAuthStep` is UX only; the server re-runs the same lookup before the role/insert writes.
+- Email-domain ↔ website-domain match is enforced server-side via `matchesStartupDomain(extractEmailDomain(user.email), normalizeDomain(body.website))`. A user with a corporate email cannot add a startup whose website lives on a different domain.
+- Duplicate-domain protection: the route queries `startups.domain = <new>` before insert and returns 409 with `existingSlug` so the client can redirect into the existing pin's claim flow. There is no DB-level unique constraint (the imported dataset has legitimate domain duplicates), so this application-level check is the only line of defense — keep it.
+- Slug uniqueness: `pickUniqueSlug` retries with numeric suffixes; collisions are bounded at 50 attempts per insert.
+- `app_metadata.role = 'startupOwner'` is set via the service-role admin API after a successful insert. Users cannot self-elevate.
+- All writes flow through the service-role client. The `startups` table keeps the existing "public read" RLS; no client-side write privilege is granted.
+- The `claimed_by` FK to `auth.users(id)` ensures the inserted row's owner is a real, confirmed user.
+- **Post-MVP**: rate-limit `/api/startups/create` per IP and per email domain; consider Turnstile/hCaptcha to prevent automated farming of fake listings.
+
 ---
 
 ## Out of Scope (MVP)
