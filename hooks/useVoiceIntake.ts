@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
 import { useDeepgram, MicDeniedError } from "@/hooks/useDeepgram";
 import { createClient } from "@/lib/supabase/client";
@@ -17,21 +16,27 @@ export type IntakeState =
 export interface ConfirmedAnswer {
   questionIndex: number;
   extractedAnswer: string;
-  structured: Record<string, unknown>;
+  mappedValues: string[];
+  remainingIds: string[];
+}
+
+interface MatchResult {
+  id: string;
+  title: string;
+  matchReason: string;
+  topics: string[];
+  link: string;
+  resourceEmail: string | null;
+  draftEmail: string;
+  emailSubject: string;
 }
 
 interface MatchResults {
   narrative: string;
-  results: Array<{
-    id: string;
-    title: string;
-    matchReason: string;
-    topics: string[];
-    link: string;
-  }>;
+  results: MatchResult[];
 }
 
-interface UseVoiceIntakeReturn {
+export interface UseVoiceIntakeReturn {
   state: IntakeState;
   currentQuestionIndex: number;
   confirmedAnswers: ConfirmedAnswer[];
@@ -42,7 +47,9 @@ interface UseVoiceIntakeReturn {
   sessionId: string | null;
   matchResults: MatchResults | null;
   inputMode: 'voice' | 'text';
+  activeFilterIds: string[];
   begin: () => void;
+  initFilterPool: (allIds: string[]) => void;
   startQuestion: () => Promise<void>;
   skipQuestion: () => void;
   confirmAnswer: () => void;
@@ -51,31 +58,7 @@ interface UseVoiceIntakeReturn {
   submitTextAnswer: (text: string) => void;
 }
 
-const QUESTIONS = [
-  {
-    text: "Do you identify with any of these founder communities — veteran, woman, rural founder, immigrant, or LGBTQ+? You can name one, a few, or skip it if none apply.",
-    extractionHint:
-      "Extract which founder communities the person identifies with. Valid values: Veteran, Woman, Rural, Immigrant, LGBTQ+. Return { communities: string[] }. Return empty array if none.",
-  },
-  {
-    text: "Where in Utah are you based or operating? You can name a city, a county, or describe the region — like Salt Lake, St. George, Cache Valley, or rural southern Utah.",
-    extractionHint:
-      "Extract the Utah location. Map city names to county names (Salt Lake City → Salt Lake, St. George → Washington, Provo → Utah, Ogden → Weber, Logan → Cache, Cedar City → Iron, Moab → Grand). Return { counties: string[] }.",
-  },
-  {
-    text: "Tell me about your business — what you do and where you are in the journey. Are you still in the idea phase, just getting started, or already running something?",
-    extractionHint:
-      "Extract business industry (one phrase), stage (one of: pre-idea, idea, early, growth, scaling), and a brief description (1-2 sentences). Return { industry: string, stage: string, description: string }.",
-  },
-  {
-    text: "What's the most pressing thing you need help with right now? For example — finding funding or loans, figuring out how to get started, growing or scaling, marketing and sales, or connecting with other entrepreneurs and mentors.",
-    extractionHint:
-      "Extract primary need (one phrase) and relevant topics. Valid topics: Funding, Start a Business, Growing a Business, Marketing, Networking. Return { primaryNeed: string, topics: string[] }.",
-  },
-];
-
 export function useVoiceIntake(): UseVoiceIntakeReturn {
-  const router = useRouter();
   const { user } = useAnonymousAuth();
   const [state, setState] = useState<IntakeState>("idle");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -83,9 +66,9 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
   const [matchResults, setMatchResults] = useState<MatchResults | null>(null);
   const [micError, setMicError] = useState(false);
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
+  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([]);
   const processingRef = useRef(false);
 
-  // Refs so event handlers always read latest values without stale closures
   const stateRef = useRef(state);
   stateRef.current = state;
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
@@ -96,10 +79,10 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
   sessionIdRef.current = user?.id ?? null;
   const inputModeRef = useRef<'voice' | 'text'>('voice');
   inputModeRef.current = inputMode;
+  const activeFilterIdsRef = useRef<string[]>([]);
+  activeFilterIdsRef.current = activeFilterIds;
 
   const sessionId = user?.id ?? null;
-
-  // Forward ref so handleSilence can call processAnswer without stale deps
   const triggerProcessRef = useRef<(() => void) | null>(null);
 
   const handleSilence = useCallback(() => {
@@ -118,17 +101,20 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
 
   const transcriptRef = useRef(transcript);
   transcriptRef.current = transcript;
-
   const startListeningRef = useRef(startListening);
   startListeningRef.current = startListening;
+
+  const initFilterPool = useCallback((allIds: string[]) => {
+    setActiveFilterIds(allIds);
+  }, []);
 
   const processAnswer = useCallback(
     async (questionIndex: number, rawTranscript: string, allAnswers: ConfirmedAnswer[]) => {
       if (processingRef.current) return;
       processingRef.current = true;
 
-      const question = QUESTIONS[questionIndex];
       const currentSessionId = sessionIdRef.current;
+      const currentFilterIds = activeFilterIdsRef.current;
 
       try {
         const res = await fetch("/api/process-answer", {
@@ -137,56 +123,62 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
           body: JSON.stringify({
             sessionId: currentSessionId,
             questionIndex,
-            questionText: question.text,
-            extractionHint: question.extractionHint,
             rawTranscript,
+            currentIds: currentFilterIds,
           }),
         });
 
-        const data = await res.json();
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error("[processAnswer] API error:", res.status, err);
+          return;
+        }
+
+        const data = await res.json() as {
+          extractedAnswer: string;
+          mappedValues: string[];
+          remainingIds: string[];
+          isAnswered: boolean;
+        };
+
         const newAnswer: ConfirmedAnswer = {
           questionIndex,
           extractedAnswer: data.extractedAnswer ?? rawTranscript,
-          structured: data.structured ?? {},
+          mappedValues: data.mappedValues ?? [],
+          remainingIds: data.remainingIds ?? currentFilterIds,
         };
 
         const updatedAnswers = [...allAnswers, newAnswer];
         setConfirmedAnswers(updatedAnswers);
 
-        if (questionIndex === 3) {
-          setState("complete");
+        // Update the filter pool after Q1-Q4
+        if (questionIndex < 4) {
+          setActiveFilterIds(data.remainingIds ?? currentFilterIds);
+        }
 
-          const profile = {
-            communities:
-              (updatedAnswers[0]?.structured?.communities as string[]) ?? [],
-            counties:
-              (updatedAnswers[1]?.structured?.counties as string[]) ?? [],
-            industry:
-              (updatedAnswers[2]?.structured?.industry as string) ?? "",
-            stage: (updatedAnswers[2]?.structured?.stage as string) ?? "",
-            description:
-              (updatedAnswers[2]?.structured?.description as string) ??
-              updatedAnswers[2]?.extractedAnswer ??
-              "",
-            primaryNeed:
-              (updatedAnswers[3]?.structured?.primaryNeed as string) ?? "",
-            topics:
-              (updatedAnswers[3]?.structured?.topics as string[]) ?? [],
-          };
+        if (questionIndex === 4) {
+          // Q5: free-form → embedding → top 5
+          setState("complete");
 
           const matchRes = await fetch("/api/match-resources", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId: currentSessionId, profile }),
+            body: JSON.stringify({
+              sessionId: currentSessionId,
+              filterIds: currentFilterIds,
+              freeFormAnswer: rawTranscript,
+              allAnswers: confirmedAnswersRef.current.map(a => ({
+                questionIndex: a.questionIndex,
+                extractedAnswer: a.extractedAnswer,
+              })),
+            }),
           });
-          const matchData = await matchRes.json();
+          const matchData = await matchRes.json() as MatchResults;
           setMatchResults(matchData);
           sessionStorage.setItem("nexis-results", JSON.stringify(matchData));
-
-          setTimeout(() => router.push("/results"), 600);
+          // Stay on the page — VoiceIntake renders inline results
         } else {
           setState("confirmed");
-          // Auto-advance: show confirmed for 1200ms then start next question
           setTimeout(async () => {
             const nextIndex = questionIndex + 1;
             setCurrentQuestionIndex(nextIndex);
@@ -208,10 +200,9 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
         processingRef.current = false;
       }
     },
-    [router, resetTranscript]
+    [resetTranscript]
   );
 
-  // Always keep triggerProcessRef up to date
   const processAnswerRef = useRef(processAnswer);
   processAnswerRef.current = processAnswer;
   const stopListeningRef = useRef(stopListening);
@@ -221,7 +212,6 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
     if (stateRef.current !== "listening") return;
     const t = transcriptRef.current.trim();
     if (t.length < 10) return;
-
     stopListeningRef.current();
     setState("processing");
     processAnswerRef.current(
@@ -252,7 +242,6 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
         { onConflict: "id" }
       );
     }
-
     resetTranscript();
     setState("listening");
     try {
@@ -271,20 +260,26 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
     const emptyAnswer: ConfirmedAnswer = {
       questionIndex: idx,
       extractedAnswer: "",
-      structured: {},
+      mappedValues: [],
+      remainingIds: activeFilterIdsRef.current,
     };
     const updated = [...confirmedAnswersRef.current, emptyAnswer];
     setConfirmedAnswers(updated);
 
-    if (idx === 3) {
+    if (idx === 4) {
       setState("complete");
     } else {
-      setCurrentQuestionIndex(idx + 1);
+      const nextIndex = idx + 1;
+      setCurrentQuestionIndex(nextIndex);
       resetTranscript();
-      if (inputModeRef.current === 'text') {
-        setState("listening");
-      } else {
-        setState("instructions");
+      setState("listening");
+      if (inputModeRef.current === 'voice') {
+        startListeningRef.current().catch((err: unknown) => {
+          if (err instanceof MicDeniedError) {
+            setMicError(true);
+            setState("idle");
+          }
+        });
       }
     }
   }, [stopListening, resetTranscript]);
@@ -311,7 +306,6 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
     if (stateRef.current !== "listening") return;
     const t = transcriptRef.current.trim();
     if (!t) return;
-
     stopListening();
     setState("processing");
     processAnswer(
@@ -347,7 +341,9 @@ export function useVoiceIntake(): UseVoiceIntakeReturn {
     sessionId,
     matchResults,
     inputMode,
+    activeFilterIds,
     begin,
+    initFilterPool,
     startQuestion,
     skipQuestion,
     confirmAnswer,
