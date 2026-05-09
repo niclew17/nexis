@@ -42,7 +42,7 @@ export function CreateAuthStep({
       <div>
         <h1
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "2rem",
             color: COLORS.text,
             margin: 0,

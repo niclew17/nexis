@@ -13,7 +13,7 @@ export function ClaimSuccess({ startupName, onEdit, onClose }: ClaimSuccessProps
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <p
         style={{
-          fontFamily: "var(--font-instrument-serif)",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system",
           fontSize: "1.125rem",
           color: COLORS.accent,
           margin: 0,

@@ -22,8 +22,7 @@ export function InstructionSlide({ onBegin }: { onBegin: () => void }) {
           style={{
             fontSize: "1.375rem",
             color: "white",
-            fontFamily: "var(--font-instrument-serif)",
-            fontStyle: "italic",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             margin: 0,
           }}
         >
@@ -33,8 +32,7 @@ export function InstructionSlide({ onBegin }: { onBegin: () => void }) {
           style={{
             fontSize: "1.375rem",
             color: "white",
-            fontFamily: "var(--font-instrument-serif)",
-            fontStyle: "italic",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             margin: 0,
           }}
         >
@@ -44,8 +42,7 @@ export function InstructionSlide({ onBegin }: { onBegin: () => void }) {
           style={{
             fontSize: "1.375rem",
             color: "white",
-            fontFamily: "var(--font-instrument-serif)",
-            fontStyle: "italic",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             margin: 0,
           }}
         >

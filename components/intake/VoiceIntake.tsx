@@ -29,7 +29,7 @@ export function VoiceIntake({
   switchToTextMode,
   submitTextAnswer,
 }: UseVoiceIntakeReturn) {
-  const [textInput, setTextInput] = useState('');
+  const [textInput, setTextInput] = useState("");
 
   const handleBegin = () => {
     startQuestion().catch(console.error);
@@ -41,22 +41,65 @@ export function VoiceIntake({
     <div style={{ maxWidth: "680px", width: "100%", padding: "0 24px" }}>
       {/* Mic permission denied */}
       {micError && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px", textAlign: "center" }}>
-          <p style={{ fontFamily: "var(--font-instrument-serif)", fontStyle: "italic", fontSize: "1.25rem", color: "white", margin: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "24px",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "1.25rem",
+              color: "white",
+              margin: 0,
+            }}
+          >
             Microphone access is required.
           </p>
-          <p style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system", fontSize: "0.875rem", color: "#666666", margin: 0, lineHeight: 1.6 }}>
-            To enable your mic, click the camera icon in your browser&apos;s address bar and allow access, then try again. Or type your answers below.
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "0.875rem",
+              color: "#666666",
+              margin: 0,
+              lineHeight: 1.6,
+            }}
+          >
+            To enable your mic, click the camera icon in your browser&apos;s
+            address bar and allow access, then try again. Or type your answers
+            below.
           </p>
           <button
             onClick={() => retryMic().catch(console.error)}
-            style={{ padding: "10px 32px", border: "1px solid white", background: "transparent", color: "white", fontSize: "0.875rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", letterSpacing: "0.05em" }}
+            style={{
+              padding: "10px 32px",
+              border: "1px solid white",
+              background: "transparent",
+              color: "white",
+              fontSize: "0.875rem",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              cursor: "pointer",
+              letterSpacing: "0.05em",
+            }}
           >
             Try again
           </button>
           <button
             onClick={switchToTextMode}
-            style={{ background: "none", border: "none", color: "#666666", fontSize: "0.8rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#666666",
+              fontSize: "0.8rem",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              cursor: "pointer",
+              padding: 0,
+              textDecoration: "underline",
+            }}
           >
             type instead
           </button>
@@ -78,16 +121,49 @@ export function VoiceIntake({
 
       {/* Idle */}
       {!micError && state === "idle" && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}>
-          <p style={{ fontFamily: "var(--font-instrument-serif)", fontSize: "3rem", color: "white", margin: 0, letterSpacing: "-0.01em" }}>
-            Utah&apos;s Nexis
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "32px",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "var(--font-instrument-serif)",
+              fontSize: "3rem",
+              color: "white",
+              margin: 0,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Resource Finder
           </p>
-          <p style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system", fontSize: "0.9375rem", color: "#666666", margin: "0", textAlign: "center", lineHeight: 1.6 }}>
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "0.9375rem",
+              color: "#666666",
+              margin: "0",
+              textAlign: "center",
+              lineHeight: 1.6,
+            }}
+          >
             Utah business resources, matched to your story.
           </p>
           <button
             onClick={begin}
-            style={{ padding: "12px 40px", border: "1px solid white", background: "transparent", color: "white", fontSize: "1rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", letterSpacing: "0.05em" }}
+            style={{
+              padding: "12px 40px",
+              border: "1px solid white",
+              background: "transparent",
+              color: "white",
+              fontSize: "1rem",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              cursor: "pointer",
+              letterSpacing: "0.05em",
+            }}
           >
             Find your resources →
           </button>
@@ -101,26 +177,63 @@ export function VoiceIntake({
 
       {/* Listening */}
       {!micError && state === "listening" && currentQuestion && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <QuestionDisplay question={currentQuestion.text} />
 
-          {inputMode === 'voice' ? (
+          {inputMode === "voice" ? (
             <>
-              <TranscriptDisplay finalTranscript={currentTranscript} interimTranscript={interimTranscript} />
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginTop: "24px" }}>
+              <TranscriptDisplay
+                finalTranscript={currentTranscript}
+                interimTranscript={interimTranscript}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "16px",
+                  marginTop: "24px",
+                }}
+              >
                 <MicIndicator isListening={isListening} />
-                <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+                <div
+                  style={{ display: "flex", gap: "24px", alignItems: "center" }}
+                >
                   {currentTranscript && (
                     <button
                       onClick={confirmAnswer}
-                      style={{ background: "none", border: "none", color: "#888", fontSize: "0.8rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#888",
+                        fontSize: "0.8rem",
+                        fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
                     >
                       confirm
                     </button>
                   )}
                   <button
                     onClick={skipQuestion}
-                    style={{ background: "none", border: "none", color: "#666", fontSize: "0.8rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#666",
+                      fontSize: "0.8rem",
+                      fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline",
+                    }}
                   >
                     skip
                   </button>
@@ -128,26 +241,74 @@ export function VoiceIntake({
               </div>
             </>
           ) : (
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginTop: "24px" }}>
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "16px",
+                marginTop: "24px",
+              }}
+            >
               <textarea
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder="Type your answer..."
                 rows={3}
-                style={{ fontFamily: "var(--font-instrument-serif)", fontSize: "1.25rem", textAlign: "center", lineHeight: 1.7, color: "white", background: "transparent", border: "none", borderBottom: "1px solid #444444", outline: "none", width: "100%", resize: "none", padding: "8px 0" }}
+                style={{
+                  fontFamily: "var(--font-instrument-serif)",
+                  fontSize: "1.25rem",
+                  textAlign: "center",
+                  lineHeight: 1.7,
+                  color: "white",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: "1px solid #444444",
+                  outline: "none",
+                  width: "100%",
+                  resize: "none",
+                  padding: "8px 0",
+                }}
               />
-              <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", gap: "24px", alignItems: "center" }}
+              >
                 {textInput.trim() && (
                   <button
-                    onClick={() => { submitTextAnswer(textInput); setTextInput(''); }}
-                    style={{ background: "none", border: "none", color: "#888", fontSize: "0.8rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                    onClick={() => {
+                      submitTextAnswer(textInput);
+                      setTextInput("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#888",
+                      fontSize: "0.8rem",
+                      fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline",
+                    }}
                   >
                     confirm
                   </button>
                 )}
                 <button
-                  onClick={() => { setTextInput(''); skipQuestion(); }}
-                  style={{ background: "none", border: "none", color: "#666", fontSize: "0.8rem", fontFamily: "ui-sans-serif, system-ui, -apple-system", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                  onClick={() => {
+                    setTextInput("");
+                    skipQuestion();
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#666",
+                    fontSize: "0.8rem",
+                    fontFamily: "ui-sans-serif, system-ui, -apple-system",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
                 >
                   skip
                 </button>
@@ -159,9 +320,22 @@ export function VoiceIntake({
 
       {/* Processing */}
       {!micError && state === "processing" && currentQuestion && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <QuestionDisplay question={currentQuestion.text} />
-          <p style={{ fontFamily: "var(--font-instrument-serif)", fontStyle: "italic", color: "#666666", fontSize: "1.125rem", margin: "16px 0" }}>
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              color: "#666666",
+              fontSize: "1.125rem",
+              margin: "16px 0",
+            }}
+          >
             Processing...
           </p>
         </div>
@@ -170,7 +344,14 @@ export function VoiceIntake({
       {/* Confirmed */}
       {!micError && state === "confirmed" && (
         <div style={{ textAlign: "center" }}>
-          <p style={{ fontFamily: "var(--font-instrument-serif)", fontStyle: "italic", color: "#666666", fontSize: "1rem", margin: "0 0 8px" }}>
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              color: "#666666",
+              fontSize: "1rem",
+              margin: "0 0 8px",
+            }}
+          >
             Got it
           </p>
         </div>
@@ -178,7 +359,15 @@ export function VoiceIntake({
 
       {/* Complete — loading results */}
       {!micError && state === "complete" && !matchResults && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "28px", width: "100%" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "28px",
+            width: "100%",
+          }}
+        >
           {/* Orbiting accent ring above the text */}
           <div style={{ position: "relative", width: "56px", height: "56px" }}>
             <motion.div
@@ -205,14 +394,17 @@ export function VoiceIntake({
                 backgroundColor: "#2a5e49",
               }}
               animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 1.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             />
           </div>
 
           <motion.p
             style={{
-              fontFamily: "var(--font-instrument-serif)",
-              fontStyle: "italic",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
               fontSize: "1.25rem",
               color: "white",
               textAlign: "center",
@@ -251,8 +443,22 @@ export function VoiceIntake({
 
       {/* Complete — inline results */}
       {!micError && state === "complete" && matchResults && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-          <p style={{ fontFamily: "var(--font-instrument-serif)", fontStyle: "italic", fontSize: "1rem", color: "#888", margin: "0 0 4px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            width: "100%",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "1rem",
+              color: "#888",
+              margin: "0 0 4px",
+            }}
+          >
             {matchResults.narrative}
           </p>
           {matchResults.results.map((result) => (

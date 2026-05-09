@@ -28,7 +28,7 @@ export function BubbleCounter({ count }: { count: number }) {
           exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "2rem",
             color: "white",
             lineHeight: 1,

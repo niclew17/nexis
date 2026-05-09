@@ -57,7 +57,7 @@ function FeatureCard({ href, label, heading, description }: FeatureCardProps) {
         </span>
         <h2
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "1.5rem",
             color: "white",
             margin: 0,

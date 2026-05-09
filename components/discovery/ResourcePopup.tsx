@@ -83,7 +83,7 @@ export function ResourcePopup({ bubble, onClose }: ResourcePopupProps) {
         {bubble.description && (
           <p
             style={{
-              fontFamily: "var(--font-instrument-serif)",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
               fontSize: "1.125rem",
               color: "#aaaaaa",
               margin: 0,

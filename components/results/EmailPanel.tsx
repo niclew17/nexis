@@ -165,7 +165,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
         {/* Email body */}
         <p
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "1.125rem",
             color: "#e5e5e5",
             lineHeight: 1.75,

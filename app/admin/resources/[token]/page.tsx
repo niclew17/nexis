@@ -22,7 +22,7 @@ export default function AddResourcePage({
     <CreateLayout>
       <h1
         style={{
-          fontFamily: "var(--font-instrument-serif)",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system",
           fontSize: "2rem",
           letterSpacing: "-0.01em",
           margin: "0 0 24px",

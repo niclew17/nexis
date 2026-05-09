@@ -33,7 +33,7 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
       </p>
       <p
         style={{
-          fontFamily: "var(--font-instrument-serif)",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system",
           fontSize: "1.125rem",
           color: "#e5e5e5",
           margin: 0,

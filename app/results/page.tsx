@@ -66,9 +66,8 @@ export default function ResultsPage() {
       >
         <p
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "1.25rem",
-            fontStyle: "italic",
           }}
         >
           No results found.
