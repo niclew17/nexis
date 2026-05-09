@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useMemo, useState } from "react";
+import { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import Map, { Source, Layer, type MapRef } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Startup } from "@/lib/map/types";
@@ -97,7 +97,10 @@ export function MapView({ startups }: MapViewProps) {
     [filters]
   );
 
-  const handleMapLoad = useCallback(() => {
+  // Map setup body. Fires from <Map onLoad={handleMapLoad}> on every fresh
+  // mount. With reuseMaps disabled, onLoad reliably refires on each mount,
+  // so no idempotency guard or warm-path detector is needed.
+  const runMapSetup = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
@@ -152,6 +155,10 @@ export function MapView({ startups }: MapViewProps) {
     // in practice) while preventing the 3s black screen on back-navigation.
     setTimeout(reveal, MIN_CURTAIN_MS);
   }, []);
+
+  const handleMapLoad = useCallback(() => {
+    runMapSetup();
+  }, [runMapSetup]);
 
   const stopOrbit = useCallback(() => {
     if (orbitRef.current !== null) {
@@ -239,6 +246,50 @@ export function MapView({ startups }: MapViewProps) {
     });
   }, [setSelectedStartup, setMode, stopOrbit]);
 
+  // Reset map-level UI state on every mount so navigating to /map always
+  // lands on a clean Utah view, regardless of where the prior session left
+  // off (e.g. zoomed into a marker in 3D mode). Filters are intentionally
+  // NOT reset — voice-set filters are explicit user input and should persist.
+  useEffect(() => {
+    setSelectedStartup(null);
+    setMode("2d");
+  }, [setSelectedStartup, setMode]);
+
+  // Unmount cleanup: cancel orbit rAF and reset fog/3d-objects so a recycled
+  // map (reuseMaps) doesn't carry 3D-orbit state into the next mount. Without
+  // this, startOrbit's rAF closure keeps calling setBearing 60×/sec on the
+  // pooled instance after navigation, fighting the next mount's camera reset.
+  // Reading mapRef.current inside the cleanup is intentional — with reuseMaps
+  // the underlying instance is pooled, not destroyed, so the ref is still
+  // valid at unmount time. The exhaustive-deps warning assumes DOM nodes; not
+  // applicable here.
+  useEffect(() => {
+    return () => {
+      stopOrbit();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      const map = mapRef.current?.getMap();
+      if (!map) return;
+      try {
+        (map as unknown as StandardConfigMap).setConfigProperty(
+          "basemap",
+          "show3dObjects",
+          false
+        );
+      } catch {}
+      try {
+        (map as unknown as { setFog: (s: unknown) => void }).setFog(FOG_2D);
+      } catch {}
+    };
+  }, [stopOrbit]);
+
+  // Defensive curtain fallback — even if both onLoad and the warm-path
+  // detector somehow miss, force the curtain to fade after a fixed window.
+  // setMapLoaded is idempotent so this is safe to fire alongside primary paths.
+  useEffect(() => {
+    const timer = setTimeout(() => setMapLoaded(true), MIN_CURTAIN_MS + 200);
+    return () => clearTimeout(timer);
+  }, []);
+
   if (!token) {
     return (
       <div
@@ -275,14 +326,14 @@ export function MapView({ startups }: MapViewProps) {
         ref={mapRef}
         mapboxAccessToken={token}
         mapStyle={MAP_STYLE}
-        // reuseMaps lets react-map-gl recycle the underlying mapbox-gl Map
-        // across React Strict Mode's mount/unmount/mount cycle in dev. Without
-        // it, the second mount tries to instantiate a new map into a container
-        // that still holds the old map's canvas — Mapbox warns "container
-        // element should be empty" and child <Marker>s mount against a stale
-        // map whose canvas container is undefined, which is what crashed
-        // markers with `appendChild of undefined` on first navigation.
-        reuseMaps
+        // NOTE: reuseMaps was previously enabled to survive React Strict
+        // Mode's double-mount in dev. It caused a worse bug on real
+        // navigation: pooled marker handles from the prior /map session
+        // accumulated against the recycled mapbox-gl instance, freezing
+        // the page on second mount and silently dropping new markers.
+        // Disabled here — the appendChild-of-undefined crash that originally
+        // motivated reuseMaps is already neutered by StartupMarker's
+        // getCanvasContainer() null guard (StartupMarker.tsx:31-38).
         initialViewState={{
           longitude: UTAH_CENTER[0],
           latitude: UTAH_CENTER[1],

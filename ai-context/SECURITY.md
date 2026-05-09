@@ -73,6 +73,16 @@ Never commit `.env.local` to version control. Required secrets:
 - Startup data is served from the Supabase `startups` table (public RLS read policy); no static JSON file is served
 - Voice filter does not store transcripts server-side; Claude is called with only the current transcript, no session context
 
+### Map Claim Flow (Feature: claim-startup-flow)
+- Domain check is exact-match server-side (`extractEmailDomain` + `matchesStartupDomain`) inside `/api/startups/claim`. The client-side check in the email step is UX only; the server re-verifies before any role/claim write so a tampered client cannot bypass it.
+- `app_metadata.role = 'startupOwner'` is set via the service-role admin API (`auth.admin.updateUserById`). `app_metadata` is not writable by the user from any client context, so users cannot self-elevate. Future privileged endpoints can read this from the JWT without a DB join.
+- Race condition on simultaneous claims is mitigated by the `.is('claimed_by', null)` precondition on the UPDATE in `/api/startups/claim` — the second writer's update affects 0 rows and gets a 409 instead of silently overwriting.
+- All writes go through service-role API routes (`/api/startups/claim`, `/api/startups/update`). The `startups` table keeps "public read" RLS; no client-side update privilege exists. `/api/startups/update` requires `app_metadata.role === 'startupOwner'` AND `claimed_by === user.id` — both checks must pass.
+- `/api/startups/update` whitelists `patch` keys against `EDITABLE_STARTUP_KEYS` and validates each value's type/enum membership. Client-supplied `claimed_by`, `claimed_at`, `slug`, `id`, `lat`, `lng`, `location` are silently dropped — the address path is the only way to mutate `lat`/`lng`, via server-side Mapbox geocoding.
+- Re-geocoding uses `MAPBOX_API_TOKEN || NEXT_PUBLIC_MAPBOX_TOKEN` from `lib/startups/geocode.ts`. The file is server-only (top-of-file comment) and is only imported from API routes; never from client components. Rate limiting is whatever Mapbox's free tier allows — abuse mitigation is deferred to post-MVP.
+- `signUp` for an email that already exists returns a generic error in the OTP step — we surface the message and tell the user to log in instead. We do not auto-log-in or merge accounts (anonymous data on the map is unused).
+- `verifyOtp({ type: 'signup' })` swaps the browser session from anonymous to the new pending user. Existing intake data tied to the prior anonymous UUID stays orphaned — acceptable for hackathon scope; account merging is out of scope.
+
 ---
 
 ## Out of Scope (MVP)

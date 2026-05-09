@@ -57,3 +57,35 @@ export interface FilterCriteria {
   size: string[];
   section: string[];
 }
+
+// Fields the /api/startups/update route accepts in `patch`. Used both as the
+// runtime allowlist and as the type for client-side diff construction.
+export const EDITABLE_STARTUP_KEYS = [
+  "name",
+  "description",
+  "website",
+  "address",
+  "logo_url",
+  "stage",
+  "employees",
+  "section",
+  "hiring",
+  "year_founded",
+  "jobs",
+] as const;
+
+export type EditableStartupKey = (typeof EDITABLE_STARTUP_KEYS)[number];
+
+export interface EditableStartupFields {
+  name?: string;
+  description?: string;
+  website?: string;
+  address?: string;
+  logo_url?: string;
+  stage?: StartupStage;
+  employees?: StartupEmployees;
+  section?: StartupSection;
+  hiring?: boolean;
+  year_founded?: number;
+  jobs?: Array<{ title: string; url: string }>;
+}

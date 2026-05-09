@@ -94,6 +94,22 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Map — Orbit rAF leaked across navigations (Feature: map-remount-bugfix)
+**Impact:** Medium (cause of the post-navigation freeze symptom)  
+**Context:** `startOrbit(map)` schedules a `requestAnimationFrame` loop that calls `map.setBearing(...)` 60×/sec. The loop was never cancelled on `MapView` unmount. Combined with `reuseMaps` (which preserves the underlying mapbox-gl instance across navigations), the rAF kept running on the new mount, fighting any camera reset and creating an unresponsive feel. Compounded the visual regression where `onLoad` doesn't re-fire on reused maps, so the dark-style config never re-applied.  
+**Ideal solution:** Current solution — `useEffect` cleanup that calls `stopOrbit()` on unmount, paired with a warm-path detector that re-runs `runMapSetup()` when `map.loaded()` is already true on remount.  
+**Workaround in place:** None needed — fixed in this feature.
+
+---
+
+### Claim — Per-update geocoding round-trip (Feature: claim-startup-flow)
+**Impact:** Low  
+**Context:** `/api/startups/update` calls Mapbox Geocoding v6 every time the address field changes — no caching, no debouncing. A claimer who repeatedly toggles the address (or a script that hammers the endpoint after compromising a session) burns Mapbox API quota one request per save. At hackathon scale (a handful of daily edits) this is well below Mapbox's free-tier limit.  
+**Ideal solution:** Cache the `(address → lat/lng)` pair in a small server-side LRU keyed on the trimmed address; debounce or rate-limit per `claimed_by` (e.g. max 5 saves per minute). For abuse-resistance, gate the geocode call on whether the new address actually differs from the cached one for that startup.  
+**Workaround in place:** None — the address-diff check in the route only suppresses the call when the address text is unchanged, not when it's recently been the same.
+
+---
+
 ### Routing — Home page doubles as feature entry point (Feature: landing-page-and-routing-split)
 **Impact:** Low  
 **Context:** Pre-split, `/` directly renders the voice intake experience, making it impossible to add a second top-level feature (Map) without a home page split. The new architecture adds one route layer (`/resources`, `/map`) with a landing page at `/`.  
