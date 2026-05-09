@@ -86,6 +86,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Map — `public/startups.json` served by Next.js (Feature: map-load-state-bugfix)
+**Impact:** Low  
+**Context:** `geocode-startups.ts` writes the geocoded startup dataset to `public/startups.json` as an intermediate step before `import-startups.ts` loads it into Supabase. Once the import runs, the JSON has no runtime purpose but is publicly accessible at `/startups.json`. 142KB of company data is served to anyone who knows the URL.  
+**Ideal solution:** Use `data/startups.json` (gitignored) for the intermediate file so it's never served by Next.js. Delete `public/startups.json` now that all data is in Supabase.  
+**Workaround in place:** Addressed in `map-load-state-bugfix` — file deleted, script paths updated to `data/`.
+
+---
+
 ### Routing — Home page doubles as feature entry point (Feature: landing-page-and-routing-split)
 **Impact:** Low  
 **Context:** Pre-split, `/` directly renders the voice intake experience, making it impossible to add a second top-level feature (Map) without a home page split. The new architecture adds one route layer (`/resources`, `/map`) with a landing page at `/`.  

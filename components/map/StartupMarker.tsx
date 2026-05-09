@@ -53,7 +53,17 @@ export function StartupMarker({
   const OUTER = Math.round(RADIUS * 2 * 1.2);
 
   return (
-    <Marker longitude={startup.lng} latitude={startup.lat} anchor="center">
+    // pointerEvents goes on the Marker's outer container (Mapbox's
+    // .mapboxgl-marker div), not our inner wrapper. The Mapbox container
+    // defaults to pointer-events: auto, so even when our inner wrapper sets
+    // none, the container still captures clicks — blocking visible markers
+    // sitting behind a hidden one at the same coordinate.
+    <Marker
+      longitude={startup.lng}
+      latitude={startup.lat}
+      anchor="center"
+      style={{ pointerEvents: isVisible ? "auto" : "none" }}
+    >
       <div
         style={{
           width: OUTER,
@@ -61,7 +71,6 @@ export function StartupMarker({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          pointerEvents: isVisible ? "auto" : "none",
           opacity: isVisible ? 1 : 0.12,
           transition: "opacity 0.2s ease-out",
         }}

@@ -69,8 +69,8 @@ Never commit `.env.local` to version control. Required secrets:
 ### Map Feature — Voice Transcript + External Logo Service (Feature: utah-startup-map)
 - `/api/map/parse-filter` accepts user voice transcript — truncate to 500 chars server-side before Claude call to prevent prompt stuffing
 - `NEXT_PUBLIC_MAPBOX_TOKEN` is a public token exposed to the client bundle — this is correct and expected for Mapbox public tokens; restrict it to the hackathon domain + localhost in the Mapbox dashboard access token settings
-- Clearbit logo URLs (`logo.clearbit.com/{domain}`) are fetched by the browser — only public company domains from `startups.json` are sent, no user data
-- `startups.json` is a static read-only file; no user writes are possible
+- Clearbit logo URLs (`logo.clearbit.com/{domain}`) are fetched by the browser — only public company domains from the `startups` table's `logo_url` column are used, no user data
+- Startup data is served from the Supabase `startups` table (public RLS read policy); no static JSON file is served
 - Voice filter does not store transcripts server-side; Claude is called with only the current transcript, no session context
 
 ---

@@ -1,7 +1,7 @@
 // Run with: npx tsx --env-file=.env.local scripts/geocode-startups.ts
 //
 // Reads data/mapdata.csv, geocodes each address via Mapbox Geocoding API v6,
-// and writes public/startups.json. Re-runs are incremental — entries already
+// and writes data/startups.json. Re-runs are incremental — entries already
 // present in startups.json (matched by linkedin_url) skip the API call.
 import { parse } from "csv-parse/sync";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -26,7 +26,7 @@ interface ExistingEntry {
   lng: number;
 }
 
-const outputPath = path.resolve("public/startups.json");
+const outputPath = path.resolve("data/startups.json");
 const existing: Record<string, { lat: number; lng: number }> = {};
 if (existsSync(outputPath)) {
   const prev = JSON.parse(readFileSync(outputPath, "utf-8")) as ExistingEntry[];

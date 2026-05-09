@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useMemo, useState } from "react";
 import Map, { Source, Layer, type MapRef } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Startup } from "@/lib/map/types";
@@ -34,6 +34,41 @@ interface MapViewProps {
 // landing, refresh, navigation).
 const MIN_CURTAIN_MS = 850;
 
+// ~0.0008° ≈ 90m. About 30 coordinate clusters in the dataset share an exact
+// lat/lng (largest is an 11-deep stack in a Lehi business park). Without jitter
+// only the topmost marker in a cluster is clickable. Spread them around a small
+// ring so each is independently selectable. Visible separation appears around
+// zoom 11+, where users are picking individual companies.
+const COINCIDENT_JITTER_DEG = 0.0008;
+
+function jitterCoincident(startups: Startup[]): Startup[] {
+  // globalThis.Map disambiguates from react-map-gl's default `Map` export,
+  // which shadows the global Map constructor in this module's scope.
+  const groups = new globalThis.Map<string, Startup[]>();
+  for (const s of startups) {
+    const key = `${s.lat.toFixed(6)},${s.lng.toFixed(6)}`;
+    const arr = groups.get(key);
+    if (arr) arr.push(s);
+    else groups.set(key, [s]);
+  }
+  const out: Startup[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      out.push(group[0]);
+      continue;
+    }
+    group.forEach((s, i) => {
+      const angle = (2 * Math.PI * i) / group.length;
+      out.push({
+        ...s,
+        lat: s.lat + COINCIDENT_JITTER_DEG * Math.sin(angle),
+        lng: s.lng + COINCIDENT_JITTER_DEG * Math.cos(angle),
+      });
+    });
+  }
+  return out;
+}
+
 export function MapView({ startups }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const orbitRef = useRef<number | null>(null);
@@ -46,6 +81,8 @@ export function MapView({ startups }: MapViewProps) {
   const mountedAtRef = useRef(Date.now());
   const { selectedStartup, filters, setSelectedStartup, setMode } =
     useMapStore();
+
+  const renderStartups = useMemo(() => jitterCoincident(startups), [startups]);
 
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -92,39 +129,28 @@ export function MapView({ startups }: MapViewProps) {
       map.fitBounds(UTAH_BOUNDS, { padding: 24, duration: 0 });
     } catch {}
 
-    // Wait for the next `idle` event before mounting markers. `load` only
-    // means the initial style finished — `idle` means the map has actually
-    // committed a render with the canvas attached, which is the precondition
-    // react-map-gl's <Marker> needs (it does map.getCanvasContainer()
-    // .appendChild() in its mount effect; calling that before idle crashed
-    // every marker on first navigation from / → /map).
+    // Reveal markers once the dark style has rendered.
+    // Primary trigger: `idle` fires after all pending renders complete.
+    // Fallback: MIN_CURTAIN_MS after handleMapLoad — handles the reused-map
+    // (back-navigation) case where the map is already idle and `idle` won't
+    // fire again, and the setConfigProperty continuous-render case.
+    //
+    // No canvas-container guard needed: StartupMarker already returns null if
+    // its own useMap() check fails, and React 18 safely no-ops setState on
+    // unmounted components.
     let revealed = false;
     const reveal = () => {
       if (revealed) return;
       revealed = true;
       map.off("idle", reveal);
-
-      const m = mapRef.current?.getMap?.();
-      // Defensive: react-map-gl's destroy() teardown can null out the canvas
-      // container under React Strict Mode's mount/unmount/mount cycle. If the
-      // map is gone, do nothing — the next mount will fire its own idle.
-      if (!m || !m.getCanvasContainer?.()) return;
-
-      // Hold the curtain for at least MIN_CURTAIN_MS so a warm-cache load
-      // (which can fire idle in <100ms) still feels like a deliberate
-      // transition rather than a flash.
       const elapsed = Date.now() - mountedAtRef.current;
       const wait = Math.max(0, MIN_CURTAIN_MS - elapsed);
-      setTimeout(() => {
-        if (!mapRef.current?.getMap?.()?.getCanvasContainer?.()) return;
-        setMapLoaded(true);
-      }, wait);
+      setTimeout(() => setMapLoaded(true), wait);
     };
     map.on("idle", reveal);
-    // Fallback: if idle never fires within 3s of `load` (e.g. setConfigProperty
-    // kicks the map into a continuous render loop), reveal anyway. The canvas
-    // container check inside reveal() guards against the unhealthy case.
-    setTimeout(reveal, 3000);
+    // 850ms fallback — sufficient for setConfigProperty style commits (~16ms
+    // in practice) while preventing the 3s black screen on back-navigation.
+    setTimeout(reveal, MIN_CURTAIN_MS);
   }, []);
 
   const stopOrbit = useCallback(() => {
@@ -293,7 +319,7 @@ export function MapView({ startups }: MapViewProps) {
         </Source>
 
         {mapLoaded &&
-          startups.map((startup) => (
+          renderStartups.map((startup) => (
             <StartupMarker
               key={startup.slug || `${startup.lat},${startup.lng},${startup.name}`}
               startup={startup}

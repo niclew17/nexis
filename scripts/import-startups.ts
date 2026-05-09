@@ -1,6 +1,6 @@
 // Run with: npx tsx --env-file=.env.local scripts/import-startups.ts
 //
-// Reads public/startups.json (produced by scripts/geocode-startups.ts) and
+// Reads data/startups.json (produced by scripts/geocode-startups.ts) and
 // upserts every entry into the `startups` table by slug. Re-runs are safe —
 // existing rows get updated, missing slugs are inserted.
 import "dotenv/config";
@@ -36,7 +36,7 @@ interface JsonStartup {
 }
 
 async function main() {
-  const jsonPath = path.resolve("public/startups.json");
+  const jsonPath = path.resolve("data/startups.json");
   const raw = readFileSync(jsonPath, "utf-8");
   const all = JSON.parse(raw) as JsonStartup[];
 
