@@ -44,33 +44,12 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getClaims() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  await supabase.auth.getClaims();
 
-  const isAnonymous = user?.is_anonymous === true;
-
-  const path = request.nextUrl.pathname;
-  const isPublic =
-    path === "/" ||
-    path.startsWith("/results") ||
-    path.startsWith("/api/");
-
-  if (!user && !path.startsWith("/auth") && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
-
-  const permanentOnlyPaths = ["/saved", "/protected"];
-  if (
-    isAnonymous &&
-    permanentOnlyPaths.some((p) => request.nextUrl.pathname.startsWith(p))
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/sign-up";
-    url.searchParams.set("reason", "save");
-    return NextResponse.redirect(url);
-  }
+  // Public-facing app: no route is gated. The getClaims() call above still runs
+  // so anon-user cookies refresh server-side (RLS on intake_sessions /
+  // intake_answers depends on it). When real auth is added later (e.g. for
+  // map-business submissions), gate the specific routes that require it.
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
