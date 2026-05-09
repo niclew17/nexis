@@ -9,7 +9,7 @@ async function loadStartups(): Promise<Startup[]> {
   const { data, error } = await supabase
     .from("startups")
     .select(
-      "slug, linkedin_url, name, address, lat, lng, description, website, domain, logo_url, stage, employees, section, year_founded, hiring, claimed_by, claimed_at, jobs"
+      "slug, linkedin_url, name, address, lat, lng, description, website, domain, logo_url, stage, employees, section, year_founded, hiring, claimed_by, claimed_at, jobs, photos"
     )
     .order("name", { ascending: true });
 

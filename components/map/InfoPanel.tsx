@@ -9,6 +9,9 @@ import { useStartupOwnership } from "@/hooks/useStartupOwnership";
 import { ClaimedBadge } from "./claim/ClaimedBadge";
 import { ClaimSection } from "./claim/ClaimSection";
 import { EditPanel } from "./edit/EditPanel";
+import { HeroGallery } from "./info/HeroGallery";
+import { Lightbox } from "./info/Lightbox";
+import { RolesCard } from "./info/RolesCard";
 
 type PanelMode = "view" | "claim" | "edit";
 
@@ -20,6 +23,7 @@ interface InfoPanelProps {
 export function InfoPanel({ startup, onClose }: InfoPanelProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [mode, setMode] = useState<PanelMode>("view");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { setSelectedStartup } = useMapStore();
   const { isOwner } = useStartupOwnership(startup);
 
@@ -30,10 +34,19 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Reset to view whenever the user picks a different startup.
+  // Reset to view + close lightbox whenever the user picks a different startup.
   useEffect(() => {
     setMode("view");
+    setLightboxIndex(null);
   }, [startup.slug]);
+
+  // Close lightbox if the user enters claim or edit mode.
+  useEffect(() => {
+    if (mode !== "view") setLightboxIndex(null);
+  }, [mode]);
+
+  const photos = startup.photos ?? [];
+  const jobs = startup.jobs ?? [];
 
   const panel = isMobile
     ? {
@@ -86,6 +99,14 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
           ...panel.style,
         }}
       >
+        {/* Hero gallery — only renders when photos exist; tap to open lightbox.
+            Empty state falls back to the existing logo-in-circle header below. */}
+        {mode === "view" && photos.length > 0 && (
+          <div style={{ padding: "16px 16px 0" }}>
+            <HeroGallery photos={photos} onOpen={(i) => setLightboxIndex(i)} />
+          </div>
+        )}
+
         {/* Header */}
         <div
           style={{
@@ -195,40 +216,10 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
               </div>
             )}
 
-            {/* Jobs (if any) */}
-            {startup.jobs && startup.jobs.length > 0 && (
+            {/* Open roles — RolesCard self-hides when jobs.length === 0 */}
+            {jobs.length > 0 && (
               <div style={{ padding: "0 24px 20px" }}>
-                <p
-                  style={{
-                    fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                    fontSize: "0.6875rem",
-                    color: COLORS.textMuted,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    margin: "0 0 8px",
-                  }}
-                >
-                  Open roles
-                </p>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {startup.jobs.map((j, i) => (
-                    <li key={`${j.url}-${i}`}>
-                      <a
-                        href={j.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                          fontSize: "0.875rem",
-                          color: COLORS.accent,
-                          textDecoration: "underline",
-                        }}
-                      >
-                        {j.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <RolesCard jobs={jobs} />
               </div>
             )}
 
@@ -400,6 +391,11 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
               setSelectedStartup(updated);
               setMode("view");
             }}
+            onUpdate={(updated) => {
+              // Live refresh from photo upload/delete/reorder — keep the
+              // user in edit mode so they can keep working on other fields.
+              setSelectedStartup(updated);
+            }}
             onDeleted={() => {
               // Full reload to /map so the deleted marker disappears and no
               // stale Zustand / mapbox-gl pooled state survives. Matches the
@@ -409,6 +405,14 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
           />
         )}
       </motion.div>
+
+      {mode === "view" && lightboxIndex !== null && photos.length > 0 && (
+        <Lightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </AnimatePresence>
   );
 }

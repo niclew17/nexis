@@ -118,6 +118,38 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Photos — Plain `<img>` instead of `next/image` (Feature: startup-photo-gallery)
+**Impact:** Low  
+**Context:** The InfoPanel's HeroGallery and PhotoManager render photos via plain `<img>` tags rather than `next/image`. Reasons: the codebase already uses raw `<img>` for the existing Clearbit logo (`StartupMarker.tsx:42-52`) and avoiding `next/image` avoids the `next.config.ts` `images.domains` whitelist hassle. Trade-off: no automatic resizing, no format negotiation (WebP/AVIF), no lazy-load attribute beyond the browser default.  
+**Ideal solution:** Migrate to `next/image` with `images.remotePatterns` allowing the Supabase storage hostname; the optimizer handles resizing per device + auto-format conversion.  
+**Workaround in place:** None needed for hackathon scale (≤8 photos × ≤5 MB on a fast page).
+
+---
+
+### Photos — No upload-time downscale or thumbnail generation (Feature: startup-photo-gallery)
+**Impact:** Medium  
+**Context:** A user uploading a 5 MB photo gets that exact 5 MB photo rendered as a 64×48 thumbnail in the InfoPanel strip. The browser downloads the full file even when displaying a tiny preview. At ~250 startups × 8 photos × 5 MB worst case = 10 GB of egress per fully-loaded map session.  
+**Ideal solution:** Resize at upload time on the server (sharp / @vercel/og or a Supabase Edge Function transform); store both `<uuid>.jpg` and `<uuid>.thumb.jpg` and reference the thumbnail in the strip. Or use Supabase's image-transformation render endpoint (`?width=128&height=96`).  
+**Workaround in place:** Deferred to post-MVP. The 5 MB cap and 8-photo limit bound the worst case.
+
+---
+
+### Photos — Per-photo round-trip on delete and reorder (Feature: startup-photo-gallery)
+**Impact:** Low  
+**Context:** Each photo deletion requires a round-trip to `/api/startups/photos/delete`; reordering N photos is one round-trip but still touches the full row. Deleting four photos in succession costs four DB reads + four storage removes + four full-row updates.  
+**Ideal solution:** A bulk `DELETE` route accepting `paths: string[]`. Or: client-side optimistic update with a single `commit` route at panel close.  
+**Workaround in place:** None — owner photo edits are rare enough to make the simple per-action route pattern acceptable.
+
+---
+
+### Photos — `req.formData()` body size capped on Vercel hobby tier (Feature: startup-photo-gallery)
+**Impact:** Low  
+**Context:** Vercel's hobby/free tier caps API request body at 4.5 MB; a 5 MB photo upload fails on that tier even though our app limit is 5 MB. The route is configured with `export const runtime = "nodejs"` to avoid the edge runtime's 1 MB cap, but the platform-level cap on hobby still applies.  
+**Ideal solution:** Either (a) drop the per-photo cap to 4 MB; (b) require Vercel Pro for production; (c) switch to direct browser → bucket uploads with a presigned URL flow (adds RLS complexity).  
+**Workaround in place:** Document the 4.5 MB ceiling and align the per-photo limit with the deployment plan before launch.
+
+---
+
 ### Add Startup — Hand-maintained free-mail blocklist + no rate limit (Feature: self-serve-add-startup)
 **Impact:** Low  
 **Context:** `lib/startups/freeMailDomains.ts` is a hand-curated list of ~20 canonical free-mail providers. Newer privacy-mail or regional providers will not be caught until the list is updated. Additionally, `/api/startups/create` has no rate limiting, so a determined actor with one valid corporate domain could spam the table with off-brand variations of their own listing (within the slug-uniqueness retry cap).  

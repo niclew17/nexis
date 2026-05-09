@@ -11,6 +11,7 @@ import type {
 } from "@/lib/map/types";
 import { COLORS } from "@/lib/map/mapConfig";
 import { AddressField } from "./AddressField";
+import { PhotoManager } from "./PhotoManager";
 
 const STAGE_OPTIONS: StartupStage[] = [
   "",
@@ -47,6 +48,9 @@ interface EditPanelProps {
   onCancel: () => void;
   onSaved: (updated: Startup) => void;
   onDeleted: () => void;
+  // Live update — fires when photos change. Distinct from onSaved so the
+  // user stays in edit mode after a photo upload/delete/reorder.
+  onUpdate: (updated: Startup) => void;
 }
 
 interface FormState {
@@ -123,7 +127,7 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
-export function EditPanel({ startup, onCancel, onSaved, onDeleted }: EditPanelProps) {
+export function EditPanel({ startup, onCancel, onSaved, onDeleted, onUpdate }: EditPanelProps) {
   const [form, setForm] = useState<FormState>(() => initialFormState(startup));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -362,6 +366,8 @@ export function EditPanel({ startup, onCancel, onSaved, onDeleted }: EditPanelPr
         />
         Currently hiring
       </label>
+
+      <PhotoManager startup={startup} onUpdate={onUpdate} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

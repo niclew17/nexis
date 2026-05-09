@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { listPhotosByPrefix, removePhotos } from "@/lib/supabase/storage";
 
 // Delete a startup row. Same trust boundary as /api/startups/update:
 // only the verified owner (matched by both app_metadata.role === 'startupOwner'
@@ -55,6 +56,26 @@ export async function POST(req: NextRequest) {
   }
   if (existing.claimed_by !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Cascade: list every object under <slug>/ in the photos bucket and remove
+  // them BEFORE the row delete. Storage failures are logged but don't abort
+  // the delete — better to drop the row than block the user's intent on a
+  // stuck bucket. Orphaned objects can be swept later.
+  const { paths: photoPaths, error: listError } = await listPhotosByPrefix(
+    admin,
+    slug
+  );
+  if (listError) {
+    console.error("[/api/startups/delete] photo list failed:", listError);
+  } else if (photoPaths.length > 0) {
+    const removeResult = await removePhotos(admin, photoPaths);
+    if (removeResult.error) {
+      console.error(
+        "[/api/startups/delete] photo cascade failed:",
+        removeResult.error
+      );
+    }
   }
 
   // Double-eq the delete on (slug, claimed_by) so a race between this read

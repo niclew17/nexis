@@ -83,6 +83,17 @@ Never commit `.env.local` to version control. Required secrets:
 - `signUp` for an email that already exists returns a generic error in the OTP step — we surface the message and tell the user to log in instead. We do not auto-log-in or merge accounts (anonymous data on the map is unused).
 - `verifyOtp({ type: 'signup' })` swaps the browser session from anonymous to the new pending user. Existing intake data tied to the prior anonymous UUID stays orphaned — acceptable for hackathon scope; account merging is out of scope.
 
+### Map Photo Gallery (Feature: startup-photo-gallery)
+- The `startup-photos` bucket is **public read** but has NO `storage.objects` RLS policy granting client-side writes. All writes go through service-role API routes (`/api/startups/photos/{upload,delete,reorder}`), so users cannot upload to or delete from the bucket directly with their JWT.
+- Per-photo path scheme is `<slug>/<uuid>.<ext>`. The `<slug>` is read from the authenticated startup row, NOT the client request — a user with a valid session for startup A cannot upload into startup B's prefix because the route resolves the slug-to-row first and re-checks `claimed_by === user.id`.
+- Mime-type and size are validated route-side against `ALLOWED_PHOTO_MIME_TYPES` and `MAX_PHOTO_BYTES` in `lib/startups/photoConfig.ts`. The bucket also has matching `allowed_mime_types` and `file_size_limit` constraints (defense in depth).
+- The path supplied to `/api/startups/photos/delete` is validated to (a) appear in the current `photos[]` AND (b) start with `<slug>/`. A user cannot delete photos from another startup's prefix even if they guess paths.
+- Reorder is restricted to an **exact permutation** of the current photos[]. Adds and removes flow through their dedicated routes only.
+- Cascade delete on `/api/startups/delete` lists `<slug>/` and removes every object under that prefix BEFORE the row is deleted. Storage-removal failures are logged but do not block the row delete (we prioritize row removal so the user's "delete listing" intent always succeeds).
+- We do NOT magic-byte-check uploaded files. The browser-reported `file.type` is trusted. A motivated user could upload a renamed binary blob with a valid image mime header. Hackathon-acceptable; document for post-MVP hardening (e.g., `file-type` library or Supabase Edge Function transform).
+- Account-deletion is OUT OF SCOPE for this feature. The existing `claimed_by → auth.users(id) on delete set null` FK leaves the row + photos behind when an owner deletes their account; the next claimer inherits the photo gallery. **Post-MVP**: add a `before delete on auth.users` trigger that calls a Supabase Edge Function to enumerate owned startups and clean up.
+- Photos contain potentially sensitive marketing imagery but no PII. The public bucket is acceptable for hackathon scope. If a future feature stores team headshots or anything PII-adjacent, migrate to a private bucket + signed URLs (the route layer changes; the schema does not).
+
 ### Map Owner Delete (Feature: claim-startup-flow / owner-delete)
 - `/api/startups/delete` requires `app_metadata.role === 'startupOwner'` AND `claimed_by === user.id` — same trust boundary as `/api/startups/update`. There is no admin bypass; every delete is owner-initiated.
 - The DELETE is double-eq'd on `(slug, claimed_by)` so any race between the ownership read and the write affects 0 rows rather than dropping a row owned by someone else.
