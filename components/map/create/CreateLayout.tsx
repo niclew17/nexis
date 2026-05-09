@@ -35,6 +35,9 @@ export function CreateLayout({ children }: CreateLayoutProps) {
           paddingTop: "8px",
         }}
       >
+        {/* Plain <a> (not next/link) forces a full browser navigation back to
+            the map. A client-side soft nav would re-mount /map without
+            wiping pooled mapbox-gl state, so markers may not render. */}
         <a
           href="/map"
           style={{
