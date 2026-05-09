@@ -1,16 +1,100 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useVoiceIntake } from "@/hooks/useVoiceIntake";
-import { useBubbleState } from "@/hooks/useBubbleState";
-import { VoiceIntake } from "@/components/intake/VoiceIntake";
-import { BubbleField } from "@/components/discovery/BubbleField";
-import { EmailPanel } from "@/components/results/EmailPanel";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
-function HomeContent() {
-  const intake = useVoiceIntake();
-  const { bubbles, activeCount, initBubbles, triggerElimination, onBubbleEliminated } = useBubbleState();
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.14, delayChildren: 0.1 } },
+};
 
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+interface FeatureCardProps {
+  href: string;
+  label: string;
+  heading: string;
+  description: string;
+}
+
+function FeatureCard({ href, label, heading, description }: FeatureCardProps) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div variants={item} style={{ flex: 1, minWidth: 0 }}>
+      <Link
+        href={href}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          padding: "32px",
+          border: `1px solid ${hovered ? "#2a5e49" : "#1a1a1a"}`,
+          textDecoration: "none",
+          color: "white",
+          cursor: "pointer",
+          transition: "border-color 0.25s ease-out",
+          height: "100%",
+          minHeight: "240px",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
+            fontSize: "0.6875rem",
+            color: "#555",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--font-instrument-serif)",
+            fontSize: "1.5rem",
+            color: "white",
+            margin: 0,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {heading}
+        </h2>
+        <p
+          style={{
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
+            fontSize: "0.875rem",
+            color: "#666666",
+            lineHeight: 1.6,
+            margin: 0,
+            flex: 1,
+          }}
+        >
+          {description}
+        </p>
+        <span
+          style={{
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
+            fontSize: "1rem",
+            color: hovered ? "white" : "#2a5e49",
+            transition: "color 0.2s ease-out",
+            marginTop: "8px",
+          }}
+        >
+          →
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
+
+function LandingContent() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -19,135 +103,129 @@ function HomeContent() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Load all resources once on mount — seed both the bubble field and the intake filter pool.
-  const initFilterPool = intake.initFilterPool;
-  useEffect(() => {
-    fetch("/api/discovery/start")
-      .then(r => r.json())
-      .then(data => {
-        const resources = data.resources ?? [];
-        initBubbles(resources);
-        initFilterPool(resources.map((r: { id: string }) => r.id));
-      });
-  }, [initBubbles, initFilterPool]);
-
-  // Eliminate bubbles when activeFilterIds narrows after each Q1-Q4 answer.
-  const prevFilterIdsRef = useRef<string[]>([]);
-  useEffect(() => {
-    const current = intake.activeFilterIds;
-    if (current.length === 0) return;
-    const prev = prevFilterIdsRef.current;
-    if (prev.length === 0) {
-      prevFilterIdsRef.current = current;
-      return;
-    }
-    const currentSet = new Set(current);
-    const eliminated = prev.filter(id => !currentSet.has(id));
-    prevFilterIdsRef.current = current;
-    if (eliminated.length > 0) triggerElimination(eliminated);
-  }, [intake.activeFilterIds, triggerElimination]);
-
-  // When Q5 results arrive, eliminate everything except the top 5.
-  const matchResultsRef = useRef(intake.matchResults);
-  useEffect(() => {
-    if (!intake.matchResults) return;
-    if (matchResultsRef.current === intake.matchResults) return;
-    matchResultsRef.current = intake.matchResults;
-
-    const topIds = new Set(intake.matchResults.results.map(r => r.id));
-    const toEliminate = intake.activeFilterIds.filter(id => !topIds.has(id));
-    if (toEliminate.length > 0) triggerElimination(toEliminate);
-  }, [intake.matchResults, intake.activeFilterIds, triggerElimination]);
-
-  if (isMobile) {
-    return (
-      <main
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "black",
-          color: "white",
-        }}
-      >
-        <VoiceIntake {...intake} />
-      </main>
-    );
-  }
-
   return (
-    <div
+    <main
       style={{
         height: "100dvh",
         overflow: "hidden",
+        position: "relative",
         display: "flex",
-        flexDirection: "row",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
         backgroundColor: "black",
         color: "white",
+        padding: "32px",
       }}
     >
-      {/* Left — voice intake */}
-      <div
+      {/* Ambient pulsing rings — pointer-events:none, behind content */}
+      <motion.div
+        aria-hidden
+        style={{
+          position: "absolute",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.04)",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.04, 0.07, 0.04] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden
+        style={{
+          position: "absolute",
+          width: "900px",
+          height: "900px",
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.04)",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+        animate={{ scale: [1.08, 1, 1.08], opacity: [0.05, 0.03, 0.05] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+      />
+
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
         style={{
           position: "relative",
-          width: "45%",
-          minWidth: "360px",
-          maxWidth: "560px",
+          zIndex: 1,
+          width: "100%",
+          maxWidth: "880px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          borderRight: "1px solid #111",
-          overflowY: "auto",
         }}
       >
-        {/* Nexis logo — absolute, centered horizontally so it doesn't disturb vertical centering of intake content */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt="Nexis"
+        {/* Wordmark */}
+        <motion.h1
+          variants={item}
           style={{
-            position: "absolute",
-            top: "32px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            height: "72px",
-            width: "auto",
-            opacity: 0.9,
-            pointerEvents: "none",
-            userSelect: "none",
+            fontFamily: "var(--font-instrument-serif)",
+            fontSize: "clamp(3rem, 8vw, 6rem)",
+            color: "white",
+            letterSpacing: "-0.02em",
+            margin: 0,
+            lineHeight: 1,
           }}
-        />
+        >
+          Nexis
+        </motion.h1>
 
-        {/* margin: auto top/bottom centers content when shorter than panel;
-            collapses to 0 when content overflows, making top scrollable. Top padding
-            (128px) clears the absolute-positioned logo so results content doesn't overlap. */}
-        <div style={{ marginTop: "auto", marginBottom: "auto", width: "100%", padding: "128px 0 64px" }}>
-          <VoiceIntake {...intake} />
-        </div>
-      </div>
+        {/* Tagline */}
+        <motion.p
+          variants={item}
+          style={{
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
+            fontSize: "0.9375rem",
+            color: "#666666",
+            marginTop: "16px",
+            marginBottom: "64px",
+            textAlign: "center",
+            lineHeight: 1.6,
+          }}
+        >
+          Utah&apos;s founder resource navigator
+        </motion.p>
 
-      {/* Right — bubble canvas OR email panel */}
-      <div style={{ flex: 1, height: "100%", position: "relative" }}>
-        {intake.matchResults ? (
-          <EmailPanel results={intake.matchResults.results} />
-        ) : (
-          <BubbleField
-            bubbles={bubbles}
-            activeCount={activeCount}
-            onBubbleEliminated={onBubbleEliminated}
+        {/* Feature cards */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "16px",
+            width: "100%",
+          }}
+        >
+          <FeatureCard
+            href="/resources"
+            label="Resources"
+            heading="Find your match."
+            description="Voice-first discovery across 213 Utah state programs, personalized to your business in under two minutes."
           />
-        )}
-      </div>
-    </div>
+          <FeatureCard
+            href="/map"
+            label="Map"
+            heading="Explore the map."
+            description="Browse Utah's founder resources by location — see what's available in your county."
+          />
+        </div>
+      </motion.div>
+    </main>
   );
 }
 
 export default function Home() {
-  return (
-    <Suspense fallback={<div style={{ minHeight: "100dvh", backgroundColor: "black" }} />}>
-      <HomeContent />
-    </Suspense>
-  );
+  return <LandingContent />;
 }

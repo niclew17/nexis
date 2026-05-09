@@ -78,6 +78,14 @@ Track performance bottlenecks, suboptimal patterns, and technical debt decisions
 
 ---
 
+### Routing — Home page doubles as feature entry point (Feature: landing-page-and-routing-split)
+**Impact:** Low  
+**Context:** Pre-split, `/` directly renders the voice intake experience, making it impossible to add a second top-level feature (Map) without a home page split. The new architecture adds one route layer (`/resources`, `/map`) with a landing page at `/`.  
+**Ideal solution:** Current plan is the ideal solution — a clean three-route structure.  
+**Workaround in place:** None needed — resolved by this feature.
+
+---
+
 ## Template
 
 ```
