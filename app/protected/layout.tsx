@@ -8,12 +8,29 @@ export default function ProtectedLayout({
   return (
     <main className="min-h-screen flex flex-col items-center">
       <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <Link href="/" className="font-semibold">
-              Nexis
-            </Link>
-          </div>
+        <nav
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px 24px",
+            borderBottom: "1px solid #111",
+          }}
+        >
+          <Link
+            href="/"
+            style={{
+              fontFamily: "var(--font-instrument-serif)",
+              fontSize: "clamp(2.25rem, 5vw, 3rem)",
+              color: "white",
+              textDecoration: "none",
+              letterSpacing: "-0.02em",
+              lineHeight: 1,
+            }}
+          >
+            Nexis
+          </Link>
         </nav>
         <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5 w-full">
           {children}

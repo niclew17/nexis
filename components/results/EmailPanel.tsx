@@ -81,7 +81,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
               borderBottom: i === activeIndex ? "2px solid #2a5e49" : "2px solid transparent",
               color: i === activeIndex ? "white" : "#555",
               fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.8125rem",
+              fontSize: "0.9375rem",
               cursor: "pointer",
               textAlign: "center",
               letterSpacing: "0.03em",
@@ -109,7 +109,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
           <p
             style={{
               fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.6875rem",
+              fontSize: "0.8125rem",
               color: "#555",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -121,7 +121,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
           <p
             style={{
               fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.9375rem",
+              fontSize: "1.125rem",
               color: "white",
               margin: 0,
               fontWeight: 500,
@@ -137,7 +137,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
             <p
               style={{
                 fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                fontSize: "0.6875rem",
+                fontSize: "0.8125rem",
                 color: "#555",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -149,7 +149,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
             <p
               style={{
                 fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                fontSize: "0.875rem",
+                fontSize: "1rem",
                 color: "#888",
                 margin: 0,
               }}
@@ -166,8 +166,8 @@ export function EmailPanel({ results }: EmailPanelProps) {
         <p
           style={{
             fontFamily: "var(--font-instrument-serif)",
-            fontSize: "1rem",
-            color: "#cccccc",
+            fontSize: "1.125rem",
+            color: "#e5e5e5",
             lineHeight: 1.75,
             margin: 0,
             whiteSpace: "pre-wrap",
@@ -199,7 +199,7 @@ export function EmailPanel({ results }: EmailPanelProps) {
             background: "transparent",
             color: "#2a5e49",
             fontFamily: "ui-sans-serif, system-ui, -apple-system",
-            fontSize: "0.875rem",
+            fontSize: "1rem",
             cursor: !active.resourceEmail && !active.link ? "not-allowed" : "pointer",
             letterSpacing: "0.05em",
             transition: "background 0.2s ease-out, color 0.2s ease-out",
