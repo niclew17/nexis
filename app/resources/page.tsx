@@ -103,7 +103,7 @@ function ResourcesContent() {
           overflowY: "auto",
         }}
       >
-        {/* Nexis logo — absolute, centered horizontally so it doesn't disturb vertical centering of intake content */}
+        {/* Nexis wordmark — absolute, centered horizontally so it doesn't disturb vertical centering of intake content */}
         <Link
           href="/"
           style={{
@@ -112,20 +112,22 @@ function ResourcesContent() {
             left: "50%",
             transform: "translateX(-50%)",
             display: "block",
-            lineHeight: 0,
+            textDecoration: "none",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Nexis"
+          <span
             style={{
-              height: "72px",
-              width: "auto",
-              opacity: 0.9,
+              fontFamily: "var(--font-instrument-serif)",
+              fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
+              color: "white",
+              letterSpacing: "-0.02em",
+              lineHeight: 1,
               userSelect: "none",
+              display: "block",
             }}
-          />
+          >
+            Nexis
+          </span>
         </Link>
 
         {/* margin: auto top/bottom centers content when shorter than panel;

@@ -90,7 +90,7 @@ function SuccessView({ slug }: { slug: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <h1
         style={{
-          fontFamily: "var(--font-instrument-serif)",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system",
           fontSize: "2rem",
           color: COLORS.text,
           margin: 0,

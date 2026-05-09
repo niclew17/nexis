@@ -4,8 +4,7 @@ export function ResultsNarrative({ narrative }: { narrative: string }) {
   return (
     <p
       style={{
-        fontFamily: "var(--font-instrument-serif)",
-        fontStyle: "italic",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system",
         fontSize: "1.5rem",
         color: "white",
         textAlign: "center",

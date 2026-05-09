@@ -23,7 +23,7 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
       <p
         style={{
           fontFamily: "ui-sans-serif, system-ui, -apple-system",
-          fontSize: "1.25rem",
+          fontSize: "1.5rem",
           color: "white",
           fontWeight: 600,
           margin: 0,
@@ -33,9 +33,9 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
       </p>
       <p
         style={{
-          fontFamily: "var(--font-instrument-serif)",
-          fontSize: "1rem",
-          color: "#2a5e49",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system",
+          fontSize: "1.125rem",
+          color: "#e5e5e5",
           margin: 0,
           lineHeight: 1.5,
         }}
@@ -49,7 +49,7 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
               key={topic}
               style={{
                 fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                fontSize: "0.75rem",
+                fontSize: "0.875rem",
                 color: "#888",
                 border: "1px solid #333",
                 padding: "2px 8px",
@@ -68,7 +68,7 @@ export function ResourceCard({ title, matchReason, topics, link }: ResourceCardP
           rel="noopener noreferrer"
           style={{
             fontFamily: "ui-sans-serif, system-ui, -apple-system",
-            fontSize: "0.875rem",
+            fontSize: "1rem",
             color: "white",
             textDecoration: "underline",
             marginTop: "4px",

@@ -204,7 +204,7 @@ export function InfoPanel({ startup, onClose }: InfoPanelProps) {
               <div style={{ padding: "0 24px 20px" }}>
                 <p
                   style={{
-                    fontFamily: "var(--font-instrument-serif)",
+                    fontFamily: "ui-sans-serif, system-ui, -apple-system",
                     fontSize: "1rem",
                     color: "#cccccc",
                     lineHeight: 1.7,

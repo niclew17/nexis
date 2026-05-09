@@ -48,15 +48,22 @@ export function MapSidebar({ startups }: MapSidebarProps) {
           left: "50%",
           transform: "translateX(-50%)",
           display: "block",
-          lineHeight: 0,
+          textDecoration: "none",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt="Nexis"
-          style={{ height: "72px", width: "auto", opacity: 0.9, userSelect: "none" }}
-        />
+        <span
+          style={{
+            fontFamily: "var(--font-instrument-serif)",
+            fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
+            color: COLORS.text,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+            userSelect: "none",
+            display: "block",
+          }}
+        >
+          Nexis
+        </span>
       </a>
 
       <div

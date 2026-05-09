@@ -31,17 +31,19 @@ export function CreateLayout({ children }: CreateLayoutProps) {
           maxWidth: "720px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-start",
+          justifyContent: "center",
+          paddingTop: "8px",
         }}
       >
         <a
           href="/map"
           style={{
             fontFamily: "var(--font-instrument-serif)",
-            fontSize: "1.5rem",
+            fontSize: "clamp(2.5rem, 6vw, 3.5rem)",
             color: COLORS.text,
             textDecoration: "none",
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
           }}
         >
           Nexis

@@ -12,7 +12,7 @@ export function AddResourceClient({ token }: { token: string }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <h2
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "1.75rem",
             color: COLORS.text,
             margin: 0,

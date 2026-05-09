@@ -66,9 +66,8 @@ export default function ResultsPage() {
       >
         <p
           style={{
-            fontFamily: "var(--font-instrument-serif)",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system",
             fontSize: "1.25rem",
-            fontStyle: "italic",
           }}
         >
           No results found.
@@ -95,11 +94,11 @@ export default function ResultsPage() {
         style={{
           position: "sticky",
           top: 0,
-          padding: "16px 24px",
+          padding: "20px 24px",
           backgroundColor: "black",
           borderBottom: "1px solid #111",
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
           zIndex: 10,
         }}
@@ -108,15 +107,27 @@ export default function ResultsPage() {
           href="/"
           style={{
             fontFamily: "var(--font-instrument-serif)",
-            fontSize: "1.25rem",
+            fontSize: "clamp(2.25rem, 5vw, 3rem)",
             color: "white",
             textDecoration: "none",
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
           }}
         >
           Utah&apos;s Nexis
         </Link>
         {isAnonymous && (
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div
+            style={{
+              position: "absolute",
+              right: "24px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
             <a
               href="/auth/login"
               style={{

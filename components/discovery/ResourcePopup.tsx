@@ -70,7 +70,7 @@ export function ResourcePopup({ bubble, onClose }: ResourcePopupProps) {
         <p
           style={{
             fontFamily: "ui-sans-serif, system-ui, -apple-system",
-            fontSize: "1.125rem",
+            fontSize: "1.5rem",
             fontWeight: 600,
             color: "white",
             margin: 0,
@@ -83,8 +83,8 @@ export function ResourcePopup({ bubble, onClose }: ResourcePopupProps) {
         {bubble.description && (
           <p
             style={{
-              fontFamily: "var(--font-instrument-serif)",
-              fontSize: "0.9375rem",
+              fontFamily: "ui-sans-serif, system-ui, -apple-system",
+              fontSize: "1.125rem",
               color: "#aaaaaa",
               margin: 0,
               lineHeight: 1.65,
@@ -101,7 +101,7 @@ export function ResourcePopup({ bubble, onClose }: ResourcePopupProps) {
                 key={topic}
                 style={{
                   fontFamily: "ui-sans-serif, system-ui, -apple-system",
-                  fontSize: "0.75rem",
+                  fontSize: "0.875rem",
                   color: "#888",
                   border: "1px solid #333",
                   padding: "2px 8px",
@@ -121,7 +121,7 @@ export function ResourcePopup({ bubble, onClose }: ResourcePopupProps) {
             rel="noopener noreferrer"
             style={{
               fontFamily: "ui-sans-serif, system-ui, -apple-system",
-              fontSize: "0.875rem",
+              fontSize: "1rem",
               color: "#2a5e49",
               textDecoration: "underline",
             }}
